@@ -1,0 +1,143 @@
+---
+title: "Lab 8"
+author: "Makesh Srinivasan"
+date: "10/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regression analysis
+Import the dataset "Forestfires.csv"
+```{r}
+data <- read.csv("forestfires.csv")
+head(data)
+```
+#### Process the dataset before building a linear regression model
+1) Replace non-numeric values with numeric data
+1.1) The day column is replaced
+```{r}
+data[data$day=="mon", 'day'] <- as.numeric(1)
+data[data$day=="tue", 'day'] <- as.numeric(2)
+data[data$day=="wed", 'day'] <- as.numeric(3)
+data[data$day=="thu", 'day'] <- as.numeric(4)
+data[data$day=="fri", 'day'] <- as.numeric(5)
+data[data$day=="sat", 'day'] <- as.numeric(6)
+data[data$day=="sun", 'day'] <- as.numeric(7)
+head(data, 7)
+```
+1.2) The month column is replaced
+```{r}
+data[data$month=="jan", 'month'] <- as.numeric(1)
+data[data$month=="feb", 'month'] <- as.numeric(2)
+data[data$month=="mar", 'month'] <- as.numeric(3)
+data[data$month=="apr", 'month'] <- as.numeric(4)
+data[data$month=="may", 'month'] <- as.numeric(5)
+data[data$month=="jun", 'month'] <- as.numeric(6)
+data[data$month=="jul", 'month'] <- as.numeric(7)
+data[data$month=="aug", 'month'] <- as.numeric(8)
+data[data$month=="sep", 'month'] <- as.numeric(9)
+data[data$month=="oct", 'month'] <- as.numeric(10)
+data[data$month=="nov", 'month'] <- as.numeric(11)
+data[data$month=="dec", 'month'] <- as.numeric(12)
+head(data, 7)
+```
+The dataset is now entirely numeric:
+```{r}
+data <- as.data.frame(apply(data, 2, as.numeric))
+str(data)
+```
+2) Check for null or NaN values
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+Since there are no null or NaN values, the dataset is clean. We can now start plotting and modelling
+
+#### Plot
+Pair-wise plot with each column and the label (area)
+```{r}
+library(ggplot2)
+par(mar=c(2,2,2,2))
+ggplot(data,aes(x=X,y=area))+geom_point()
+ggplot(data,aes(x=Y,y=area))+geom_point()
+ggplot(data,aes(x=month,y=area))+geom_point()
+ggplot(data,aes(x=day,y=area))+geom_point()
+ggplot(data,aes(x=FFMC,y=area))+geom_point()
+ggplot(data,aes(x=DMC,y=area))+geom_point()
+ggplot(data,aes(x=DC,y=area))+geom_point()
+ggplot(data,aes(x=ISI,y=area))+geom_point()
+ggplot(data,aes(x=temp,y=area))+geom_point()
+ggplot(data,aes(x=RH,y=area))+geom_point()
+ggplot(data,aes(x=wind,y=area))+geom_point()
+ggplot(data,aes(x=rain,y=area))+geom_point()
+```
+Correlation between the features and the label column - area
+```{r}
+cor(data$X,data$area)
+cor(data$Y,data$area)
+cor(data$month,data$area)
+cor(data$day,data$area)
+cor(data$FFMC,data$area)
+cor(data$DMC,data$area)
+cor(data$DC,data$area)
+cor(data$ISI,data$area)
+cor(data$temp,data$area)
+cor(data$RH,data$area)
+cor(data$wind,data$area)
+cor(data$rain,data$area)
+```
+
+Model with all columns
+```{r}
+model <- lm(area~.,data=data)
+model
+```
+
+```{r}
+summary(model)
+```
+
+```{r}
+sigma(model)
+```
+
+```{r}
+confint(model)
+```
+
+```{r}
+#########Diagnostics##########
+#Evaluating the residuals
+plot(model,1)
+
+model1 <- lm(log(area)~month,data=data)
+plot(model1,1)
+
+```
+
+```{r}
+install.packages('tidyverse')
+install.packages('caret')
+library(tidyverse)
+library(caret)
+```
+
+```{r}
+set.seed(123)
+train_samples <- Boston$medv %>%
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+train <- Boston[train_samples,]
+test <- Boston[-train_samples,]
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```

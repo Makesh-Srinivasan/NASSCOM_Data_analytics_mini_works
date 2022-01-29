@@ -1,0 +1,122 @@
+---
+title: "Assessment 1"
+author: "Makesh Srinivasan"
+date: "8/31/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br />
+Faculty: Dr. C. Sweetlin Hemalatha <br />
+Slot: L39 + L40 <br />
+Course code: CSE3505 <br />
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assessment 1 using CRABS dataset. Frame 10 questions and provide suitable solutions for the same
+#### The questions are numbered from 1 to 10. Before processing to the question, I have run some preliminary commands below.
+Import the dataset CRABS from the MASS package
+```{r}
+library(MASS)
+data(crabs)
+crabs <- crabs
+```
+
+Explore the structure of the dataset to understand the type of data we are dealing with
+```{r}
+str(crabs)
+```
+## Questions:
+Q1) I want the list of all the male crabs that are blue in colour. Display their sex, index and colour
+```{r}
+#import the necessary packages
+library(dplyr)
+crabs %>%
+  filter(sex == "M", sp == "B") %>%
+  dplyr::select(index, sex, sp)
+# The crabs displayed have index from 1 to 50. This verifies that the result of my code is correct as the first 50 entries are male crabs with blue colour body
+```
+
+Q2) List the various possible colours of the crabs from this dataset and verify that there are 100 of each colour
+```{r}
+print("The possible colours of crabs are: ")
+print(paste("colour: ", unique(crabs$sp)))
+crabs%>%
+  group_by(sp)%>%
+  summarise(Colour_total = length(sp))
+# for each colour (Blue (B) and Orange (O)), there are 100 each 
+```
+
+Q3) Crabs have thick shell that is called as carapace. What are the average and median Carapace width and Carapace Length of crabs?
+```{r}
+# Mean
+print(paste("The average carapace width (mm) = ", mean(crabs$CW)))
+print(paste("The average carapace length (mm) = ", mean(crabs$CL)))
+# Median
+print(paste("The median carapace width (mm) = ", median(crabs$CW)))
+print(paste("The median carapace length (mm) = ", median(crabs$CL)))
+```
+
+Q4) Display all the crabs index, sex and lobe size that have a frontal lobe size that is greater than the average value
+```{r}
+print(paste("The mean or average lobe size = ", mean(crabs$FL)))
+# the results below must be having FL greater than this value
+crabs %>%
+  filter(FL > mean(crabs$FL)) %>%
+  select(index, sex, FL)
+``` 
+
+Q5) Display all female crabs's index, sex, and Rear Width (in descending order of RW value) that have RW greater than 10 
+```{r}
+crabs %>%
+  filter(sex == "F", RW > 10) %>%
+  arrange(desc(RW))%>%
+  select(index, sex, RW)
+```
+
+Q6) Find the average body depth of male crabs and female crabs
+```{r}
+crabs %>%
+  group_by(sex) %>%
+  summarize(Average_bd = mean(BD))
+```
+
+Q7) I want to determine the next king crab for the colony. Display all prospective male crabs that are blue in colour and have a body width greater than the average body width of the entire population. Display the index, sex, color (sp) and BD values only. Also, RANDOMLY pick three possible candidates for king position
+```{r}
+# we need to filter based on sex == Male, body width > mean(BD) and colour == blue
+# The question says of the entire population and therefore, we have to consider both male and female while determining the mean
+print(paste("The mean BD value of the entire dataset = ", mean(crabs$BD)))
+df1<-crabs %>%
+  filter(sex == "M", sp == "B", BD > mean(BD)) %>%
+  select(index, sex, sp, BD)
+df1
+# randomly sample 3 crabs for king role
+sample_n(df1, 3)
+```
+
+Q8) The king crab is selected! Now I want a suitable queen for the king. The king crab desires a female crab who has incredible intellectual capacity to ensure the colony lives on. Display all the prospective female crabs that have frontal lobe size greater than average frontal lobe size of the entire population. Display the index, sex and FL only. Also, RANDOMLY pick three possible candidates for queen position
+```{r}
+# we need to filter based on sex == Female, FL > mean(FL)
+# The question says of the entire population and therefore, we have to consider both male and female while determining the mean
+print(paste("The mean FL value of the entire dataset = ", mean(crabs$FL)))
+df2<-crabs %>%
+  filter(sex == "F", FL > mean(FL)) %>%
+  select(index, sex, FL)
+df2
+# randomly sample 3 crabs for queen role
+sample_n(df2, 3)
+```
+
+Q9) Arrange all male crabs in the descending order of their rear width
+```{r}
+arrange(filter(crabs, sex == "M"), desc(RW))
+```
+
+Q10) Find the maximum size of the frontal lobe of male and female crabs
+```{r}
+crabs %>%
+  group_by(sex) %>%
+  summarize(Maximum_fl = max(FL))
+```
+
+

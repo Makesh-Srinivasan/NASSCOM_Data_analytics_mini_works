@@ -1,0 +1,294 @@
+---
+title: "Lab 10"
+author: "Makesh Srinivasan"
+date: "11/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Healthcare analytics
+Instructions: Analyze any healthcare related data set of your choice for handling missing values, performing data manipulation, statistical analysis, basic visualization, correlation & Regression analysis with proper inferences. Provide your submission in html format. {Do whatever analysis is applicable]
+
+For this exercise, I plan to do the following.
+1) Data manipulation
+2) Data cleaning
+3) Visualisation and plotting
+4) Regression analysis
+
+NOTE: all the previous exercises (8 in total) are incorporated into these four topics.
+
+#### 1) Data manipulation
+1.1) Import the dataset "insurance.csv"
+```{r}
+data <- read.csv("insurance.csv")
+head(data)
+```
+1.2) Explore the structure of the dataset and print the dimension of the same
+```{r}
+str(data)
+```
+```{r}
+print("Dimension: ") 
+dim(data)
+```
+
+We can see that the datatypes of sex, smoker and region are chr, while others are int or num. For regression analysis (step-4), we need to convert the chr datatype to numeric datatype. This conversion is generally done in data cleaning stage, but can also be done in the data manipulation step.
+
+1.3) Convert chr to numberic types
+```{r}
+unique(data["sex"])
+unique(data["region"])
+unique(data["smoker"])
+```
+So we see that there are two values for sex and smoker, and 4 for region. They are converted below.
+1.4) Import the dataset "insurance.csv"
+```{r}
+data[data$sex=="male", 'sex'] <- as.numeric(1)
+data[data$sex=="female", 'sex'] <- as.numeric(2)
+
+data[data$smoker=="yes", 'smoker'] <- as.numeric(1)
+data[data$smoker=="no", 'smoker'] <- as.numeric(0)
+
+data[data$region=="southwest", 'region'] <- as.numeric(1)
+data[data$region=="southeast", 'region'] <- as.numeric(2)
+data[data$region=="northwest", 'region'] <- as.numeric(3)
+data[data$region=="northeast", 'region'] <- as.numeric(4)
+
+data$sex = as.numeric(as.character(data$sex))
+data$region = as.numeric(as.character(data$region))
+data$smoker = as.numeric(as.character(data$smoker))
+head(data, 7)
+```
+```{r}
+str(data)
+```
+Now, all the datatypes are numeric or int. We can proceed to the next step
+
+#### 2) Data cleaning
+```{r}
+library(tidyverse)
+```
+2.1) Check for NA values in the dataset
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+2.2) Check for duplicate entries:
+```{r}
+print(paste("Number of duplicate entries = ", sum(duplicated(data)) - 1))
+```
+```{r}
+summary(data)
+```
+There are no missing values or duplicate entries. Hence, no further cleaning is needed for this dataset.
+
+#### 3) Data visualisation and plotting
+Import the necessary libraries
+```{r}
+library(dplyr)
+library(caret)
+library(ggplot2)
+```
+3.1) Show the number of smokers based on gender
+```{r}
+data%>%
+  group_by(sex) %>%
+  summarize(Smokers = length(smoker))
+```
+3.2) Show the same as a bar plot to get a better understanding of smokers based on gender
+```{r}
+ggplot(data,aes(x=sex))+geom_bar(fill = c("#FF6633","#121212"))+ggtitle("Male and Female smokers")
+```
+As shown above, the number of males smoking are slightly greater than those of the female ones.
+
+3.3) Show the pie chart of the sokers and non-smokers
+```{r}
+pie(table(data$smoker), main="Male Left Handers Smoking Habits", col=rainbow(length(unique(data$smoker))), radius=1)
+```
+
+Inference: We can see that most of the population is non-smoker which means the charges will be generally lower than the median value. This is because most of the population is healther.
+
+3.4) Age distribution on a histogram plot
+```{r}
+hist(data$age, main = "Age distribution", xlab = "Age range", ylab = "frequency")
+```
+The majority of the dataset is a representation of younger population - less than age of 40. Hence, we should see some healthier people and as a result, the charges will be lower than the median value in general.
+
+3.5) Draw the boxplot for pulse rate to analyse the five summary statistics. Provide appropriate title and label. 
+```{r}
+boxplot(data$bmi, main="BMI boxplot", ylab = "BMI")
+```
+Inference: The distribution is not skewed as the median is right along the center of the box. There are several outliers in this dataset for the BMI indeces. The interquartile range and percentiles are given below. The max and min values are also shown on the image above.
+```{r}
+IQR(data$bmi)
+percentile_bmi = quantile(data$bmi, c(.25,.50,.75))
+percentile_bmi
+```
+We have explored the individual attributes enough. We can move to correlation, pairplots and relation between variables now.
+
+3.6) Pair plots of the attributes:
+```{r}
+pairs(data[,c("age","sex","bmi","children","smoker","region", "charges")])
+```
+3.7) Correlation between the features and charges attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$charges)))
+}
+```
+We can see that the correlation between the smoker and charges is highest while the other features seem insignificant or very low. age, bmi and smoker have positive correlation, meaning that the higher the age, bmi and smokers have higher charges incurred. Sex has negative correlation with charges but the value is very small - closer to 0. This indicates there is no correlation between the age and the charges - the hospitals charge similarly for both sex. The region and the number of children also have very minimal effect on the charges. 
+
+3.8) Covariance between the features and charges attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cov(data[[c]],data$charges)))
+}
+```
+3.10) Mean, median and std. deviation of the charges attribute.
+```{r}
+mean_charge <- mean(data$charges)
+median_charge <- median(data$charges)
+var_charge <- var(data$charges)
+sd_charge <- sd(data$charges)
+print(paste("mean_charge = ", mean_charge))
+print(paste("median_charge = ", median_charge))
+print(paste("var_charge = ", var_charge))
+print(paste("sd_charge = ", sd_charge))
+```
+
+3.11) Show the scatter plot of the BMI and charges
+```{r}
+ggplot(data, aes(x=bmi,y=charges))+geom_point()
+```
+There is not much linearity as shown above - this is supported by the lower value of the correlation coefficient above.
+
+3.12) Show the scatter plot of the smoker and charges
+```{r}
+ggplot(data, aes(x=smoker,y=charges))+geom_point()
+```
+3.13) Show the scatter plot of the age and charges
+```{r}
+ggplot(data, aes(x=charges,y=age))+geom_point()
+```
+There is minimal correlation between the age and the carges attribute. But generally, the value of the chrages increases as the age increases as shown above.
+
+We have seen enough plots and analysis between the variables
+
+Step-4 can now begin.
+
+#### 4) Rregression analysis
+Build a linear regression model using all the columns, then choose the statistically significant ones and create another model. Evaluate the models using performance metrics such as R squared and RMSE values. 
+
+NOTE: This dataset in its raw format as used now may not yeild a very good linear regression model and thus, we have to explore other techniques such as polynomial regression or logistic regression, etc.
+##### Linear model using all attributes
+4.1) Model with all columns
+```{r}
+model1 <- lm(charges~.,data=data)
+model1
+```
+Generated the linear model.
+4.2) Summary of the model
+```{r}
+summary(model1)
+```
+The r squared and adjusted r squared values are 0.750 and 0.749 respectively. They are virtually similar however, the degrees of freedom is extremely high for this model. There are 5 statistically significant attributes for this model and they are age, bmi, children, and smoker. Even region can be considered significant with one star but sex cannot be considered as such.
+
+4.3) Sigma of the model
+```{r}
+sigma(model1)
+```
+
+4.4) Confidence interval of the model
+```{r}
+confint(model1)
+```
+4.5) Residuals vs Fitted:
+```{r}
+plot(model1, 1)
+```
+The red line does not coincide well with the residual=0 which indicates that the prediction accuracy is containing high variance compared to the actual values. 
+4.6) Model1 diagnostics
+```{r}
+par(mar=c(2,2,2,2))
+hist(model1$residuals)
+```
+
+```{r}
+qqnorm(model1$residuals,ylab = "Residuals")
+qqline(model1$residuals)
+```
+Again, the normalised values do not fall on the line indicating that the performance of the model in terms of prediction is not as accurate. {Must lie on the line to be considered accuracte} 
+
+##### Linear model using the significant attributes only
+Significant attributes = age,bmi,children,smoker,region
+```{r}
+data = subset(data, select = c(age,bmi,children,smoker,region,charges))
+str(data)
+```
+4.7) Plots of the trend between the significant attributes and the label - charges
+```{r}
+ggplot(data,aes(x=age,y=charges))+geom_point()+geom_smooth()
+ggplot(data,aes(x=age,y=charges))+geom_point()+geom_smooth(method='lm',se=FALSE)
+ggplot(data,aes(x=bmi,y=charges))+geom_point()+geom_smooth(method='lm',se=FALSE)
+ggplot(data,aes(x=children,y=charges))+geom_point()+geom_smooth(method='lm',se=FALSE)
+ggplot(data,aes(x=smoker,y=charges))+geom_point()+geom_smooth(method='lm',se=FALSE)
+ggplot(data,aes(x=region,y=charges))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+4.8) Linear model building
+
+```{r}
+set.seed(123)
+train_samples <- data$charges %>% 
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+```
+
+```{r}
+train <- data[train_samples,]
+test <- data[-train_samples,]
+model2 <- lm(charges~.,data=train)
+```
+The dataset is split into train and test set and the model is trained - model2
+
+4.9) Summary
+```{r}
+summary(model2)
+```
+The R squared value of the train set is higher than it was in Model1. This is because the insignificant attribute is eliminated and therefore there is less noise in the data. 
+
+4.10) Sigma of the model
+```{r}
+sigma(model2)
+```
+
+4.11) Confidence interval of the model
+```{r}
+confint(model2)
+```
+4.12) Residuals vs Fitted:
+```{r}
+plot(model2, 1)
+```
+4.13) Model2 diagnostics
+```{r}
+par(mar=c(2,2,2,2))
+hist(model2$residuals)
+```
+
+```{r}
+qqnorm(model2$residuals,ylab = "Residuals")
+qqline(model2$residuals)
+```
+The points do not all lie on the line and thus, it is not as accurate. This explains why the R squared value is lower.
+4.14) Prediction set accuracy
+```{r}
+pred <- model2 %>%
+  predict(test)
+R2 <- R2(pred,test$charges)
+R2
+```
+The R squared value may be seemingly lower than the one from the first model, but note that this model contains the train and test set and only 4/5 th of the dataset is used in training the model. Mover, this is fairly closer to the r squared achieved above (0.75) and considering this is built with only statistically significant attributes, the model will generally yeild better results for untrained data, i.e, new data. Hence, model2 can be considered for future predictions and hence it is the better model.

@@ -1,0 +1,189 @@
+---
+title: "Lab test 2"
+author: "Makesh Srinivasan"
+date: "10/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+data(biopsy)
+data <- biopsy
+```
+## Lab 2 test questions on Biopsy
+1.       What is the frequency and relative frequency distribution of benign and malignant categories?
+```{r}
+#Before omitting NA values
+any(is.na(data))
+data <- na.omit(data)
+# After omitting NA values
+any(is.na(data))
+```
+
+```{r}
+# Frequency:
+freq = table(data$class)
+freq
+# Relative frequency:
+class_freq = table(data$class)
+samplesize = nrow(data)
+class_relfreq = class_freq/samplesize
+cbind(class_relfreq)
+```
+
+2.       Show the frequency distribution graphically by bar chart
+```{r}
+fre_d = data$class
+fre_d.freq = table(fre_d)
+barplot(fre_d.freq) 
+```
+
+3.       Find the frequency distribution of clump thickness.
+```{r}
+# V1 clump thickness
+clump_freq = table(data$V1)
+clump_freq
+```
+
+4.       Find the mean clump thickness of benign and malignant categories.
+```{r}
+# V1 clump thickness.
+library(dplyr)
+data %>%
+  group_by(class) %>%
+  summarize(Mean_V1 = mean(V1))
+```
+
+5. What is the most frequently occurring single epithelial cell size?
+```{r}
+# Max occuring:
+max(table(data$V5))
+which.max(table(data$V5))
+```
+
+6. Find the interquartile range of epithelial cell size.
+```{r}
+# V5 single epithelial cell size.
+# The Q1 Q2 and Q3 values:
+epithelial_percentile = quantile(data$V5, c(.25,.50,.75))
+epithelial_percentile
+
+# The interquartile range:
+IQR(data$V5) 
+```
+
+7. Is clump thickness and epithelial cell size correlated? Justify your answer
+```{r}
+correlation = cor(data$V1, data$V5)
+print(paste("correlation = ", correlation))
+
+# Justification:
+# Correlation is the measure the strength of the linear relationship between two variables, here it is V1 and V5. Higher the value is to 1, the stronger the relation is. A value of 0.53 is a fairly good correlation but not considered a strong correlation. The value is also positive, this means there is a positive correlation between the two features. This signifies the variables move in the same direction - with increase in one there is an increase in the other. Hence, there is a correlation between clump thickness and epithelial cell size
+```
+
+8.       Is the clump thickness values skewed? Justify your answer.
+```{r}
+library(e1071)
+library(lattice)
+```
+```{r}
+print(paste("Kurtosis = ", kurtosis(data$V1)))
+# The kurtosis value of -0.6441847 (k<0) suggests that it is platykurtic. 
+
+print(paste("Skewness = ", skewness(data$V1)))
+# The skewness value of 0.58507 (s>0) suggests that it is right-skewed. 
+
+densityplot(data$V1)
+```
+
+9.       Build and compare models with all variables and statistically significant variables to predict the value of clump thickness based on other numerical values. Suggest a model with limited dependent variables that is better according to you. Justify your analysis.
+
+APPROACH:
+Initially I made a Linear model with all the columns and using summary I deduced the statistically significant variables. Then I made a linear regression model using those variables alone. The testing was done on the latter using RMSE and R squared value.
+
+IMPLEMENTATION:
+Load the data:
+```{r}
+# Drop the ID column as it is irrelavant and non-numeric datatype
+data = subset(data, select = -c(ID))
+str(data)
+```
+
+Check for any NA values and ensure there are none
+```{r}
+any(is.na(data))
+```
+
+Convert the class column to integral values
+```{r}
+data$class <- as.integer(data$class)
+```
+
+Get correlation information on the features and the label (V1)
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$V1)))
+}
+```
+The correlation between all features and the V1 column are here
+
+Build a linear model with predictions for the V1 column
+```{r}
+model <- lm(V1~.,data=data)
+model
+```
+Get the summary of the linear model
+```{r}
+summary(model)
+```
+The statistically significant features are class, V4 and V3. Hence the linear regression model with the three features will be able to provide a good prediction model.
+
+Linear regression using statistically significant variables:
+```{r}
+library(caret)
+library(tidyverse)
+set.seed(123)
+# Split into test train with 7:3 ratio
+data = subset(data, select = c(V4,V3,class,V1))
+train_samples <- data$V1 %>% 
+  createDataPartition(p=0.7,list=FALSE)
+head(train_samples)
+```
+Train and test:
+```{r}
+train <- data[train_samples,]
+test <- data[-train_samples,]
+```
+Get model2 summary:
+```{r}
+model2 <- lm(V1~.,data=train)
+summary(model2)
+```
+Make predictions and save them
+```{r}
+pred <- model2 %>%
+  predict(test)
+```
+RMSE:
+```{r}
+RMSE <- RMSE(pred,test$V1)
+RMSE
+```
+R2 on test data:
+```{r}
+R2 <- R2(pred,test$V1)
+R2
+# The R squared value is not very high (closer to 1, the better). Hence a better model can be built other than linear regression
+```
+```{r}
+sigma(model2)*100/mean(train$V1)
+```
+The model is comparitively the same as the one with all varibales but this is better as there are lesser number of variables. Hecnce the prediction model is better
+
+
+

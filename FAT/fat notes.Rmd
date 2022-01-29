@@ -1,0 +1,535 @@
+---
+title: "fat notes"
+author: "Makesh Srinivasan"
+date: "12/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(MASS)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(caret)
+library(lattice)
+library(e1071)
+```
+
+```{r}
+library(MASS)
+library(dplyr)
+survey <- survey
+df <- unique(survey)
+df <- na.omit(survey)
+library(ggplot2)
+library(tidyverse)
+View(df)
+```
+
+```{r}
+ggplot(data=df, aes(x=Sex)) + geom_bar()+ggtitle("Male and Female participants")
+```
+
+```{r}
+ggplot(data=df, aes(x=Wr.Hnd, y=NW.Hnd)) + geom_point() + geom_line() + facet_wrap(~Sex)+geom_smooth(method=lm)
+```
+
+```{r}
+ggplot(data=df, aes(x=Sex, y=Wr.Hnd))+geom_boxplot()+geom_point(aes(size=Age, colour=Wr.Hnd)) + labs(title = "title")
+# use continuous for size in geom_point(aes()) and colour is discrete/continuous doesn't matter
+```
+
+```{r}
+ggplot(df, aes(x="", y=age,fill=val))+geom_bar(width=1,stat ='identity')+coord_polar("y",start=0)+ggtitle("Smoking habits of male left handers based on 'Age'")
+```
+
+```{r}
+age <- factor(df$Age)
+val <- factor(df$Smoke)
+typeof(val)
+```
+
+
+```{r}
+ggplot(df, aes(x=Fold))+geom_bar(aes(fill=Fold))+labs(title="something")+facet_wrap(~Sex)
+```
+
+```{r}
+ggplot(df ,aes(x=Wr.Hnd,y=Pulse))+geom_point(aes(size=Height,color=Sex))
+
+```
+
+Plot the distribution of height of the students with filled colour based on gender with facet based on left and write handers.
+```{r}
+ggplot(df,aes(x=Height, fill=Sex))+geom_histogram(binwidth = 1)+labs(title = "Distribution of height",y='Frequency')+facet_wrap(~W.Hnd)
+```
+
+```{r}
+gf = factor(df$W.Hnd,levels = c("Left","Right"),labels = c("Left","Right"))
+gf
+
+```
+
+
+Draw the distribution of smoking habits of male left handers based on age using pie chart.
+
+```{r}
+df%>%
+  filter(Sex == "Male" & W.Hnd == "Left") %>%
+  ggplot(aes(x="", y=Age, fill=Smoke))+geom_bar(width=1, stat="identity")+coord_polar("y", start=0)+ggtitle("Smoking habits of male left handers based on 'Age'")+ theme(axis.text = element_blank(),axis.ticks=element_blank(),panel.grid = element_blank())
+
+
+
+#age <- factor(df2$Age)
+#val <- factor(df2$Smoke)
+
+#ggplot(df2, aes(x="",y=age,fill=val))+geom_bar(width=1,stat ='identity')+coord_polar("y",start=0)+ggtitle("Smoking habits of male left handers based on 'Age'")+ theme(axis.text = element_blank(),axis.ticks=element_blank(),panel.grid = element_blank())
+```
+
+```{r}
+df2 <- survey %>%
+  filter(Sex == "Male" & W.Hnd == "Left")
+
+age <- factor(df2$Age)
+val <- factor(df2$Smoke)
+
+ggplot(df2, aes(x="",y=age,fill=val))+geom_bar(width=1,stat ='identity')+coord_polar("y",start=0)+ggtitle("Smoking habits of male left handers based on 'Age'")+ theme(axis.text = element_blank(),axis.ticks=element_blank(),panel.grid = element_blank())
+```
+
+```{r}
+survey <- survey
+newsurvey <- unique(survey)
+newsurvey <- na.omit(survey)
+```
+
+```{r}
+gender = table(newsurvey$Sex)
+gender
+```
+
+
+Find the relative frequency distribution of male and female participants and display them with the precision of two decimal places.
+```{r}
+old=options(digits = 2)
+sex_freq = table(newsurvey$Sex)
+samplesize = nrow(newsurvey)
+sex_relfreq = sex_freq/samplesize
+cbind(sex_relfreq)
+```
+
+```{r}
+newsurvey%>%
+  group_by(Sex) %>%
+  summarise(freq=n()) %>%
+  mutate(rel.freq = freq/sum(freq))
+```
+
+```{r}
+newsurvey%>%
+  filter(W.Hnd=="Right") %>%
+  group_by(Sex) %>%
+  summarise(freq=n()) 
+  #mutate(rel.freq = freq/sum(freq))
+```
+
+Find the range of students’ age participated in the survey.
+Break the age range into non-overlapping sub-intervals by defining a sequence of equal distance break points of 10 by rounding the range to nearest integer.
+Find the distribution of the age range according to the sub-intervals with cut with its right boundary opened. Display it in column form.
+```{r}
+range(newsurvey$Age)
+
+breaks=seq(10,80,by=10)
+breaks
+
+sub_intervals = cut(newsurvey$Age, breaks, right=FALSE)
+sub_intervals <- table(sub_intervals)
+cbind(sub_intervals)
+```
+
+Which age range of students has mostly participated in the survey.
+```{r}
+print(paste("Max = ", max(sub_intervals)))
+which.max(sub_intervals)
+```
+
+```{r}
+percentile_age=quantile(newsurvey$Age, c(.20,.50,.70))
+percentile_age
+```
+
+
+Which category of exercise students has the maximum writing hand span?
+```{r}
+max_hnd <- newsurvey%>%
+  group_by(Exer)%>%
+  summarise(max = max(Wr.Hnd))
+max_hnd
+newsurvey[which.max(newsurvey$Wr.Hnd),]$Exer
+```
+
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$price))) 
+}
+```
+
+```{r}
+densityplot(data$V1)
+```
+
+```{r}
+densityplot(df$Height)
+```
+
+```{r}
+print(paste("Kurtosis = ", kurtosis(df$Height)))
+print(paste("Skewness = ", skewness(df$Height)))
+```
+
+```{r}
+ggplot(df, aes(Height)) + geom_boxplot()
+```
+
+```{r}
+cor(data)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+### Predicting the Whole.weight from the Length of the abalone
+
+```{r}
+data <-  subset(data,select = -c(Sex))
+colnames(data)
+ggplot(abalone,aes(x=Length,y=Whole.weight))+geom_point()
+ggplot(abalone,aes(x=Length,y=Whole.weight))+geom_point()+geom_smooth()
+ggplot(abalone,aes(x=Length,y=Whole.weight))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+```
+
+### Correlation between weight and length of the abalone
+
+```{r}
+cor(abalone$Length,abalone$Whole.weight)
+```
+
+### Train test split
+
+```{r}
+library(tidyverse)
+library(caret)
+
+set.seed(123)
+train_ <- abalone$Whole.weight %>%
+  createDataPartition(p=0.8,list=FALSE)
+
+train <- abalone[train_,]
+test <- abalone[-train_,]
+```
+
+### Building a linear model
+
+```{r}
+model = lm(Length~Whole.weight,data=train)
+model
+```
+
+```{r}
+summary(model)
+```
+### Confidence interval of the model
+
+```{r}
+confint(model)
+```
+
+### Confidence interval
+
+```{r}
+Whole.weight <- 000
+test <- data.frame(Whole.weight)
+confid <- predict(model,test,level = .95,interval = "confidence")
+confid
+```
+
+### Prediction interval
+
+```{r}
+predid <- predict(model,test,level = .95,interval = "prediction")
+predid
+```
+#### In residuals Median is very close to 0 and thus mean is 0. The t factor has a significance of 0.001 and thus it is statistically significant relationship
+
+#### F statistic's value is also statistically significant
+
+### Prediction
+```{r}
+pred <- model %>%
+  predict(test)
+```
+
+### Diagnostics
+```{r}
+plot(abalone$Length,abalone$Whole.weight)
+```
+
+### Evaluating the residuals
+```{r}
+plot(model,1)
+```
+
+### Errors
+
+```{r}
+val = sigma(model)
+perc = val*100/mean(abalone$Whole.weight)
+sprintf("The Residual Standard Deviation is %f and its percentage is %f%%",val,perc)
+```
+
+
+# Linear Regression in multiple variables
+
+X = entire dataset except Length
+Y = Length
+
+### Finding correlation between the variables
+
+```{r}
+cor(abalone)
+```
+### From the correlation matrix -> determining to find length using the other variables
+
+(For next model -> Drop height and rings column as they have low correlation)
+
+```{r}
+pairs(abalone)
+#Pairplot to see the relation between the various attributes. 
+```
+
+```{r}
+print("Diameter vs Length")
+ggplot(abalone,aes(x=Diameter,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+print("Whole weight vs Length")
+ggplot(abalone,aes(x=Whole.weight,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+print("Shucked weight vs Length")
+ggplot(abalone,aes(x=Shucked.weight,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+print("Viscera Weight vs Length")
+ggplot(abalone,aes(x=Viscera.weight,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+```{r}
+print("Shell Weight vs Length")
+ggplot(abalone,aes(x=Shell.weight,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+print("Length vs Rings")
+ggplot(abalone,aes(x=Rings,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+print("Height vs Length")
+ggplot(abalone,aes(x=Height,y=Length))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+### Splitting into train and test
+
+```{r}
+set.seed(123)
+train_ <- abalone$Length %>%
+  createDataPartition(p=0.8,list=FALSE)
+
+train <- abalone[train_,]
+test <- abalone[-train_,]
+```
+
+### Building the model
+
+```{r}
+model <- lm(Length~.,data=train)
+summary(model)
+```
+
+### Making prediction
+
+```{r}
+pred <- model %>%
+  predict(test)
+```
+
+### Model Performance 
+```{r}
+#model performance
+RMSE <- RMSE(pred,test$Length)
+RMSE
+R2 <- R2(pred,test$Length)
+R2
+```
+
+### Inference 
+The t statistic is large for 3 variables and small for the rest, the attributes for which it is large will contribute constructively for model building. 
+
+Residual Standard Error : 0.01877 on 3335 degrees of freedom
+Multiple R-squared:  0.9756
+Adjusted R-squared:  0.9755
+F-statistic: 1.901e+04 on 7 and 3335 DF
+p-value: < 2.2e-16
+
+Median value is close to 0 and thus this means that mean will be close to 0, making the mean of the residuals almost 0. 
+
+### Residual Standard Deviation
+
+```{r}
+val = sigma(model)
+perc = sigma(model)*100/mean(train$Length)
+sprintf("The Residual Standard Deviation is %f and its percentage is %f%%",val,perc)
+```
+
+### Confidence interval
+
+```{r}
+confint(model)
+```
+```{r}
+par(mar=c(2,2,2,2))
+hist(model$residuals)
+```
+### Normal qq plot of residuals
+
+```{r}
+qqnorm(model$residuals,ylab = "Residuals")
+qqline(model$residuals)
+```
+
+# Building Model with statistically significant columns
+
+### Building another model after dropping columns with no significance = Height, Whole weight, Shell Weight, Rings
+
+```{r}
+abalone1 <- subset(abalone,select=-c(Height,Rings,Shell.weight,Whole.weight))
+```
+
+### Splitting into train and testing sets
+
+```{r}
+set.seed(123)
+train_ <- abalone1$Length %>%
+  createDataPartition(p=0.8,list=FALSE)
+
+train1 <- abalone1[train_,]
+test1 <- abalone1[-train_,]
+```
+
+
+### Building the model
+```{r}
+model1 <- lm(train1$Length~.,data=train1)
+```
+
+```{r}
+summary(model1)
+```
+### Final Metrics
+
+```{r}
+RMSE <- RMSE(pred,test1$Length)
+R2 <- R2(pred,test1$Length)
+sprintf("The RMSE error is %f and the R2 error is %f",RMSE,R2)
+```
+

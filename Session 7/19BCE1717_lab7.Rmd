@@ -1,0 +1,185 @@
+---
+title: "Lab 7"
+author: "Makesh Srinivasan"
+date: "9/28/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+survey <- survey
+newsurvey <- unique(survey)
+newsurvey <- na.omit(survey)
+```
+
+1.	How many male and female students participated in the survey?
+```{r}
+gender = table(newsurvey$Sex)
+gender
+```
+
+2.	Find the relative frequency distribution of male and female participants and display them with the precision of two decimal places.
+```{r}
+old=options(digits = 2)
+sex_freq = table(newsurvey$Sex)
+samplesize = nrow(newsurvey)
+sex_relfreq = sex_freq/samplesize
+cbind(sex_relfreq)
+```
+
+3.	Display the male right hander and female right hander in the column format.
+```{r}
+right_handers = newsurvey[newsurvey$W.Hnd=="Right",]
+right_handers <- table(right_handers$Sex)
+cbind(right_handers)
+```
+
+4.	What percentage of male left handers never smokes?
+```{r}
+library(dplyr)
+df1 <- newsurvey %>%
+  filter(Sex=="Male", W.Hnd == "Left")
+
+df2 <- newsurvey %>%
+  filter(Sex=="Male", W.Hnd == "Left", Smoke=="Never")
+a = nrow(df1)
+b = nrow(df2)
+print(paste("Male left handers = ", a))
+print(paste("Male left handers who never smokes = ", b))
+print(paste("The percentage of male left handers never smokes = ", (b/a)*100))
+```
+
+5.	Find the range of students’ age participated in the survey.
+```{r}
+age=newsurvey$Age
+range(age)
+```
+
+6.	Break the age range into non-overlapping sub-intervals by defining a sequence of equal distance break points of 10 by rounding the range to nearest integer.
+```{r}
+breaks=seq(10,80,by=10)
+breaks
+```
+
+7.	Find the distribution of the age range according to the sub-intervals with cut with its right boundary opened. Display it in column form.
+```{r}
+sub_intervals = cut(newsurvey$Age, breaks, right=FALSE)
+sub_intervals <- table(sub_intervals)
+cbind(sub_intervals)
+```
+
+8.	Which age range of students has mostly participated in the survey.
+```{r}
+print(paste("Max = ", max(sub_intervals)))
+print("Interval:")
+which.max(sub_intervals)
+```
+
+9.	Compute the mean, variance and standard deviation of the age of the students participated in the survey.
+```{r}
+mean_age <- mean(newsurvey$Age)
+print(paste("Mean = ", mean_age))
+var_age <- var(newsurvey$Age)
+print(paste("Variance = ", var_age))
+sd_age <- sd(newsurvey$Age)
+print(paste("Standard deviation = ", sd_age))
+```
+
+10.	Which category of exercise students has the maximum writing hand span? 
+```{r}
+hnd_span <- newsurvey%>%
+  group_by(Exer)%>%
+  summarise(max = max(Wr.Hnd))
+hnd_span
+print("The category of students which has max writing hand-span:")
+newsurvey[which.max(newsurvey$Wr.Hnd),]$Exer
+```
+
+11.	Compute the covariance and correlation between age and writing span.
+```{r}
+covariance = cov(newsurvey$Age,newsurvey$Wr.Hnd)
+correlation = cor(newsurvey$Age,newsurvey$Wr.Hnd)
+print(paste("covariance = ", covariance))
+print(paste("correlation = ", correlation))
+```
+
+12.	Display the 20%,50% and 70% percentile of the age data.
+```{r}
+percentile_age=quantile(newsurvey$Age, c(.20,.50,.70))
+percentile_age
+```
+
+#### Frame any three questions on descriptive statistics to analyse the categorical & quantitative variables present in the data of your choice.
+
+For this section the CRABS dataset was used
+
+```{r}
+crabs <- crabs
+crabs
+```
+The CRABS dataset does not have any NaN values hence there is no need to clean the dataset.
+
+#### Questions
+
+13. Show the 25, 50 and 75 percentiles of Frontal Lobe size of all the crabs on a box plot and display the values on the console
+```{r}
+# The percentile values 
+percentile_FL=quantile(crabs$FL, c(.25,.50,.75))
+print(paste("25%: ", percentile_FL[1]))
+print(paste("50%: ", percentile_FL[2]))
+print(paste("75%: ", percentile_FL[3]))
+
+# The boxplot
+par(mar=c(2,2,2,2))
+boxplot(crabs$FL,horizontal=TRUE)
+```
+
+14. Find the distribution of the Body depth (BD) range according to the non-overlapping sub-intervals by defining a sequence of equal distance break points of 2, cut with its right boundary opened. Display it in column form and also show the interval with most number of crabs
+```{r}
+# Before we display the distibution for sub-intervals we need to make an interval of 10 across the range of values.
+# 1) Range:
+print("Range: ")
+print(paste("Min = ", range(crabs$BD)[1]))
+print(paste("Max = ", range(crabs$BD)[2]))
+
+# 2) Create breaks with intervals of 10 units
+breaks=seq(1,30,by=2)
+
+# 3) Display the intervals
+print("The column containing the subintervals and its corresponding counts")
+sub_intervals = cut(crabs$BD, breaks, right=FALSE)
+sub_intervals <- table(sub_intervals)
+cbind(sub_intervals)
+
+# 4) Which interval has the most number of crabs
+print("Maximum number of crabs sub-interval: ")
+which.max(sub_intervals)
+# Inference: The [13,15) also the 7th interval has the highest number of crabs
+```
+
+15. It is said that the most intelligent crabs have largest Frontal Lobe size. Find out which colour (sp) of crabs has the maximum FL value. It is also said that the Body size or the BD value does not play a role in a crab's intelligence. Determine the covariance and correlation between FL and BD. 
+```{r}
+# 1)  
+frontal_lobe <- crabs%>%
+  group_by(sp)%>%
+  summarise(max = max(FL))
+frontal_lobe
+print(paste("The colour of crabs which has max FL:", crabs[which.max(crabs$FL),]$sp))
+# Inference: The orange colour crabs have the highest FL size in general (compared to the blue ones)
+
+# 2) 
+covariance = cov(crabs$FL,crabs$BD)
+correlation = cor(crabs$FL,crabs$BD)
+print(paste("covariance = ", covariance))
+print(paste("correlation = ", correlation))
+
+# Inference: There is a strong correlation between the FL and BD of crabs. Hence BD and FL are heavily dependent on one another
+```

@@ -1,0 +1,213 @@
+---
+title: "Lab 4: Dataset cleaning"
+author: "Makesh Srinivasan"
+date: "8/24/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dataset cleaning
+#### The dataset used for this lab exercise is https://www.kaggle.com/uciml/iris 
+#### The dataset is clean as it is and therefore, I introduced NA values randomly, changed datatypes and duplicated entries to perform dataset cleaning on this. There are 6 columns and 150 entries for 3 different species of iris
+```{r}
+# import the libraries
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+# import the dataset
+original_iris <- read.csv("Iris.csv")
+summary(original_iris)
+```
+
+### The dataset is clean, i.e, there are no missing values or any duplicate entries. Thus, they will be added in the following sections
+```{r}
+print(paste("Number of missing values = ", sum(is.na(original_iris))))
+print(paste("Number of duplicate entries = ", sum(table(original_iris$Id)-1)))
+```
+
+### Adding Missing values (NA)
+```{r}
+# inject NA values
+dirty_iris <- original_iris %>%
+  group_by(Species) %>%
+  mutate(SepalLengthCm = replace(SepalLengthCm, sample(row_number(),size = ceiling(0.2 * n()), replace = TRUE), NA))%>%
+  mutate(SepalWidthCm = replace(SepalWidthCm, sample(row_number(),size = ceiling(0.2 * n()), replace = TRUE), NA))%>%
+  mutate(PetalLengthCm = replace(PetalLengthCm, sample(row_number(),size = ceiling(0.2 * n()), replace = TRUE), NA))%>%
+  mutate(PetalWidthCm = replace(PetalWidthCm, sample(row_number(),size = ceiling(0.2 * n()), replace = TRUE), NA))
+
+print(paste("Number of missing values = ", sum(is.na(dirty_iris))))
+print(paste("Number of duplicate entries = ", sum(table(dirty_iris$Id)-1)))
+```
+
+### Changing the datatype of a column from num to chr
+```{r}
+# Datatype change from num to chr for column SepalLengthCm
+dirty_iris <- dirty_iris %>% 
+  mutate(SepalLengthCm = as.character(SepalLengthCm))
+str(dirty_iris)
+```
+
+### Adding duplicate entries to the dataset
+```{r}
+duprow = dirty_iris[1,]
+for(i in 1:25){
+  dirty_iris = rbind(dirty_iris, duprow)
+}
+
+print(paste("Number of missing values = ", sum(is.na(dirty_iris))))
+print(paste("Number of duplicate entries = ", sum(table(dirty_iris$Id)-1)))
+```
+
+```{r}
+# the dimension is now 175 with 6 columns - an increase from 150 rows due to duplicates
+dim(dirty_iris)
+```
+### The dataset is now entirely dirty! the following sections are dataset cleaning
+#### Drop the duplicate entries
+```{r}
+clean_iris <- unique(dirty_iris)
+print(paste("Number of rows after removing duplicates = ", nrow(clean_iris)))
+```
+
+#### The numbers are in character datatype and to be processed they need to be converted to numeric datatype
+```{r}
+print("Before changing the datatype")
+str(clean_iris)
+clean_iris <- clean_iris %>% 
+  mutate(SepalLengthCm = as.numeric(SepalLengthCm))
+print("After changing the datatype")
+str(clean_iris)
+```
+
+#### There are many NA values in the column SepalLengthCm that needs to be filled
+```{r}
+unique(clean_iris$SepalLengthCm)
+```
+#### Find mean, median, min and max
+```{r}
+print(paste("Mean value of the column SepalLengthCm = ", mean(clean_iris$SepalLengthCm,na.rm = TRUE)))
+print(paste("Median value of SepalLengthCm = ", median(clean_iris$SepalLengthCm,na.rm = TRUE)))
+print(paste("Maximum value of SepalLengthCm = ", max(clean_iris$SepalLengthCm,na.rm = TRUE)))
+print(paste("Minimum value of SepalLengthCm = ", min(clean_iris$SepalLengthCm,na.rm = TRUE)))
+```
+
+#### The mean and median values are very close while min and max values are having a wider difference in magnitude. Hence, the use of mean or median in substituting for a NA value in this column is a good practice
+```{r}
+# Used meadian to fill the missing values
+clean_iris <- clean_iris %>%
+  mutate(SepalLengthCm = replace(SepalLengthCm, is.na(SepalLengthCm), median(SepalLengthCm, na.rm = TRUE)))
+```
+#### Now verify that there are no missing or NA values in this column (SepalLengthCm)
+```{r}
+print(paste("The number of missing values (column SepalLengthCm) are = ", sum(is.na(clean_iris$SepalLengthCm))))
+```
+
+#### We repeat this for the next column - SepalWidthCm
+#### There are some missing values in this column
+```{r}
+unique(clean_iris$SepalWidthCm)
+```
+#### The datatype is in numeric format so we can directly move to filling missing values
+```{r}
+#### Find mean, median, min and max
+print(paste("Mean value of the column SepalWidthCm = ", mean(clean_iris$SepalWidthCm,na.rm = TRUE)))
+print(paste("Median value of SepalWidthCm = ", median(clean_iris$SepalWidthCm,na.rm = TRUE)))
+print(paste("Maximum value of SepalWidthCm = ", max(clean_iris$SepalWidthCm,na.rm = TRUE)))
+print(paste("Minimum value of SepalWidthCm = ", min(clean_iris$SepalWidthCm,na.rm = TRUE)))
+```
+
+#### Again, the mean and median are very close compared to the min or max values of this column. Hence, either mean or median can be used to replace missing values
+```{r}
+# used median value to replace the missing values
+clean_iris <- clean_iris %>%
+  mutate(SepalWidthCm = replace(SepalWidthCm, is.na(SepalWidthCm), median(SepalWidthCm, na.rm = TRUE)))
+```
+#### Now verify that there are no missing or NA values in this column (SepalWidthCm)
+```{r}
+print(paste("The number of missing values (column SepalWidthCm) are = ", sum(is.na(clean_iris$SepalWidthCm))))
+```
+
+
+
+#### We repeat this for the next column - PetalLengthCm
+#### There are some missing values in this column
+```{r}
+unique(clean_iris$PetalLengthCm)
+```
+#### The datatype is in numeric format so we can directly move to filling missing values
+```{r}
+#### Find mean, median, min and max
+print(paste("Mean value of the column PetalLengthCm = ", mean(clean_iris$PetalLengthCm,na.rm = TRUE)))
+print(paste("Median value of PetalLengthCm = ", median(clean_iris$PetalLengthCm,na.rm = TRUE)))
+print(paste("Maximum value of PetalLengthCm = ", max(clean_iris$PetalLengthCm,na.rm = TRUE)))
+print(paste("Minimum value of PetalLengthCm = ", min(clean_iris$PetalLengthCm,na.rm = TRUE)))
+```
+
+#### Again, the mean and median are quite close compared to the min or max values of this column. Hence, either mean or median can be used to replace missing values
+```{r}
+# used mean value to replace the missing values
+clean_iris <- clean_iris %>%
+  mutate(PetalLengthCm = replace(PetalLengthCm, is.na(PetalLengthCm), mean(PetalLengthCm, na.rm = TRUE)))
+```
+#### Now verify that there are no missing or NA values in this column (PetalLengthCm)
+```{r}
+print(paste("The number of missing values (column PetalLengthCm) are = ", sum(is.na(clean_iris$PetalLengthCm))))
+```
+
+
+
+#### Only one column is left. We repeat this for the last column - PetalWidthCm
+#### There are some missing values in this column
+```{r}
+unique(clean_iris$PetalWidthCm)
+```
+#### The datatype is in numeric format so we can directly move to filling missing values
+```{r}
+#### Find mean, median, min and max
+print(paste("Mean value of the column PetalWidthCm = ", mean(clean_iris$PetalWidthCm,na.rm = TRUE)))
+print(paste("Median value of PetalWidthCm = ", median(clean_iris$PetalWidthCm,na.rm = TRUE)))
+print(paste("Maximum value of PetalWidthCm = ", max(clean_iris$PetalWidthCm,na.rm = TRUE)))
+print(paste("Minimum value of PetalWidthCm = ", min(clean_iris$PetalWidthCm,na.rm = TRUE)))
+```
+
+#### Again, the mean and median are quite close compared to the min or max values of this column. Hence, either mean or median can be used to replace missing values
+```{r}
+# used mean value to replace the missing values
+clean_iris <- clean_iris %>%
+  mutate(PetalWidthCm = replace(PetalWidthCm, is.na(PetalWidthCm), mean(PetalWidthCm, na.rm = TRUE)))
+```
+#### Now verify that there are no missing or NA values in this column (PetalWidthCm)
+```{r}
+print(paste("The number of missing values (column PetalWidthCm) are = ", sum(is.na(clean_iris$PetalWidthCm))))
+```
+
+### The dataset is now completely clean!
+```{r}
+# verify that the dataset is clean by checking if there are any NA values
+any(is.na(clean_iris))
+```
+```{r}
+print(paste("Number of missing values after cleaning = ", sum(is.na(clean_iris))))
+print(paste("Number of duplicate entries after cleaning = ", sum(table(clean_iris$Id)-1)))
+```
+
+### The dataset can be used for the next phase such as to visualise the different species
+```{r}
+summary(clean_iris)
+```
+```{r}
+print("The different species present are: ")
+df <- clean_iris%>%
+  group_by(Species) %>%
+  select(Species)
+unique(df)
+```

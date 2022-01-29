@@ -1,0 +1,102 @@
+---
+title: "Lab 3 Data Manipulation using dplyr package"
+author: "Makesh Srinivasan"
+date: "8/17/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Obtain a data frame called “newsurvey” by removing all ‘na’ values in “survey” data of MASS package to do the following:
+```{r}
+library(MASS)
+data(survey)
+print("Dimensions before omitting na values")
+dim(survey)
+
+newsurvey = na.omit(survey)
+print("Dimensions after omitting na values")
+dim(newsurvey)
+head(newsurvey)
+```
+
+1.	Install the dplyr package and import it.
+```{r}
+# The following comment contains the code to install the package
+# install.packages("dplyr")
+library(dplyr)
+# Installed the package
+```
+
+2.	Filter the top 5 male left handers.	
+```{r}
+head(filter(newsurvey, Sex == "Male", W.Hnd == "Left"),5)
+```
+
+3.	Display all female right handers who keep right on top while clapping.
+```{r}
+# View function will display all the matching entries but it does not get displayed on HTML page. Hence the View is removed
+# View(filter(newsurvey, Sex == "Female", W.Hnd == "Right", Clap == "Right"))
+filter(newsurvey, Sex == "Female", W.Hnd == "Right", Clap == "Right")
+```
+
+4.	Display all students who never exercise.
+```{r}
+# View function will display all the matching entries but it does not get displayed on HTML page. Hence the View is removed
+# View(filter(newsurvey, Exer == "None"))
+filter(newsurvey, Exer == "None")
+```
+
+5.	Display random 5 rows of gender, age and writing hand columns of the students.
+```{r}
+sample_n(newsurvey[c("Sex","Age","W.Hnd")], 5)
+```
+
+6.	Display random 50% of the rows of age, pulse rate and writing hand span of female left handers.
+```{r}
+newsurvey %>%
+  filter(Sex == "Female", W.Hnd == "Left") %>%
+  dplyr::sample_frac(0.5) %>%
+  dplyr::select(Age, Pulse, Wr.Hnd)
+```
+
+7.	Arrange all male left handers according to descending order of their heights.
+```{r}
+dplyr::arrange(filter(newsurvey, Sex == "Male", W.Hnd == "Left"), desc(Height))
+```
+
+8.	Introduce a new column hand_span which contains the value as difference between the span of writing hand and non-writing hand and display it along with gender, writing hand and non-writing hand span.
+```{r}
+newsurvey%>%
+  mutate(hand_span=Wr.Hnd-NW.Hnd) %>%
+  select(Sex, W.Hnd, NW.Hnd, hand_span)
+```
+
+9.	Display the average writing span of male and female left handers.
+```{r}
+newsurvey %>%
+  filter(W.Hnd == "Left") %>%
+  group_by(Sex) %>%
+  summarize(Average = mean(Wr.Hnd))
+
+# The answer was verified using the following lines of code as well
+# print(paste("Average writing span of male left handers = ", mean(filter(newsurvey, Sex=="Male", W.Hnd=="Left")$Wr.Hnd)))
+# print(paste("Average writing span of female left handers = ", mean(filter(newsurvey, Sex=="Female", W.Hnd=="Left")$Wr.Hnd)))
+
+```
+
+10.	Find the maximum pulse rate of male left and right handers.
+```{r}
+newsurvey %>%
+  filter(Sex == "Male") %>%
+  group_by(W.Hnd) %>%
+  summarize(Maximum = max(Pulse))
+```
+
+

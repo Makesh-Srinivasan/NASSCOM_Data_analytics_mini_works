@@ -1,0 +1,114 @@
+---
+title: "Lab exercise 1: Basic Data Types in R"
+author: "Makesh Srinivasan"
+date: "8/8/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br />
+Faculty: Dr. C. Sweetlin Hemalatha <br />
+Slot: L39 + L40 <br />
+Course code: CSE3505 <br />
+
+## Solve the following questions using R
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Q1) Convert TRUE to an integer
+```{r}
+print("Before conversion: ")
+x <- TRUE
+class(x)
+
+print("After conversion: ")
+x <- as.integer(x)
+class(x)
+```
+Q2) Make this quote into an R string
+– “Do you think this is a game?”, he said. “No, I think Jenga’s a game”, Archer responded.
+```{r}
+quote_str <-"\"Do you think this is a game?\", he said. \"No, I think Jenga\'s a game\", Archer responded."
+writeLines(quote_str)
+class(quote_str)
+```
+Q3)	Assign an integer value to two variables p & q
+```{r}
+p <- as.integer(1)
+q <- as.integer(2)
+
+print(paste("Value of p: ", p))
+print(paste("Class of p is: ", class(p)))
+
+print(paste("Value of q: ", q))
+print(paste("Class of q is: ", class(q)))
+```
+Q4)	Use R as a calculator to do basic arithmetic operations on p &q and store each result in different variables.
+```{r}
+addn <- p+q
+subn <- p-q
+divn <- p/q
+muln <- p*q
+mods <- p%%q
+expo <- p^q
+print(paste("Addition = ", addn))
+print(paste("Subtraction = ", subn))
+print(paste("Division = ", divn))
+print(paste("Multiplication = ", muln))
+print(paste("Modulus = ", mods))
+print(paste("Exponent = ", expo))
+
+```
+Q5) Calculate sqrt(p) and perform log2 transformation on the result.
+```{r}
+result <- sqrt(p)
+print(paste("Square Root: ", result))
+print(paste("Log2: ", log2(result)))
+```
+Q6) Calculate the 10-based logarithm of 100 and multiply the result with cosine of π.
+```{r}
+answer <- log10(100)*cos(pi)
+answer
+```
+Q7) Create a vector ‘x’ using : operator from -2 to 2.
+```{r}
+x <- -2:2
+x
+```
+Q8) Create a vector ‘y’ using c() with values 1 to 10. What is the dimension of y and length of y.
+```{r}
+y <- c(1,2,3,4,5,6,7,8,9,10)
+y
+print("Dimension:")
+dim(y)
+print(paste("Length:", length(y)))
+```
+Q9) Create two vectors small and caps with first 5 alphabets in lower case and last 5 alphabets in upper case respectively. Bind it row and columnwise.
+```{r}
+small <- c("a","b","c","d","e")
+caps <- c("Q","W","E","R","T")
+rbind(small,caps)
+cbind(small,caps)
+```
+Q10) Create a matrix (M) and find MxMxM
+```{r}
+M <- matrix(c(1,-2,5,4,8,-1,3,6,7),nrow = 3,ncol = 3)
+print("Matrix:")
+M
+print("After Matrix Multiplication of MxMxM")
+M%*%M%*%M
+print("Element-wise Multiplication (not matrix multiplication) of M*M*M")
+M*M*M
+```
+Q11) Find the result of elementwise multiplication of M by M.
+```{r}
+print("Element-wise multiplication of M*M")
+M*M
+```
+Q12) Find the transpose, inverse and determinant of M.
+```{r}
+print("Transpose:")
+t(M)
+print("Inverse:")
+solve(M)
+print("Determinant:")
+det(M)
+```

@@ -1,0 +1,117 @@
+---
+title: "Lab 5: Visualisation in R"
+author: "Makesh Srinivasan"
+date: "9/7/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Questions
+1. Plot a bar graph for the number of male and female participants in the survey. Provide the title as “Male and Female participants”, y-axis label as “frequency” and specify the colours for the bars.
+```{r}
+library(MASS)
+library(dplyr)
+data(survey)
+newsurvey <- survey
+
+any(duplicated(newsurvey))
+any(is.na(newsurvey))
+newsurvey <- na.omit(newsurvey)
+any(is.na(newsurvey))
+
+df <- newsurvey %>%
+  group_by(Sex) %>%
+  summarise(total = length(Sex))
+df
+barplot(df$total, main = 'Male and Female participants', ylab = 'frequency', col=c("red", "green"))
+```
+
+2. Plot a bar graph for the number of left handers and right handers in the survey. Provide the title as “Left Handers and Right Handers”, y-axis label as “count” and specify the colours for the bars.
+```{r}
+df2 <- newsurvey %>%
+  group_by(W.Hnd) %>%
+  summarise(total = length(W.Hnd))
+df2
+barplot(df2$total, main = 'Left Handers and Right Handers', ylab = 'count', col=c("blue", "black"))
+```
+
+3. Plot the distribution between male left handers and female left handers using bar chart. Provide the title as “Female Left Handers and Male Left Handers , y-axis label as “count” and specify the colours for the bars.
+```{r}
+df3 <- newsurvey %>%
+  filter(W.Hnd=="Left")%>%
+  group_by(Sex) %>%
+  summarise(total = length(W.Hnd))
+df3
+barplot(df3$total, main = 'Female Left Handers and Male Left Handers', ylab = 'count', col=rainbow(2))
+```
+
+4. Draw the distribution of smoking habits of male left handers using pie chart.
+```{r}
+unique(newsurvey$Smoke)
+pie(table(newsurvey$Smoke[newsurvey$Sex=="Male"&newsurvey$W.Hnd=="Left"]), main="Male Left Handers Smoking Habits", col=rainbow(length(unique(newsurvey$Smoke))), radius=1)
+```
+
+5. Draw the histogram of age distribution with the title as ‘Age distribution’ and xlabel as ‘Age range’ and ylabel as ‘frequency’.
+```{r}
+hist(newsurvey$Age, main = "Age distribution", xlab = "Age range", ylab = "frequency")
+```
+
+6. Reveal the relationship between the age and writing hand span using scatter plot.
+```{r}
+plot(newsurvey$Age,newsurvey$Wr.Hnd, main = "Age vs W.Hnd", xlab = "Age", ylab = "Wr.Hnd")
+```
+
+7. Draw the boxplot for pulse rate to analyse the five summary statistics. Provide appropriate title and label.
+```{r}
+boxplot(newsurvey$Pulse, main="Pulse boxplot", ylab = "Pulse")
+
+# There are 3 outliers in the column (Pulse)
+```
+
+8. Find if any iris flowers are outliers - meaning any anomolies or mutated flowers in the dataset
+```{r}
+library(lattice)
+iris <- read.csv("Iris.csv")
+boxplot(iris[, 2:5], main="Multiple-boxplot for Iris dataset", ylab = "cm")
+
+# INFERENCE:
+# As shown in the box plot, there are no outliers for the columns SepalLengthCm,	PetalLengthCm	and PetalWidthCm
+# However, in case of SepalWidthCm, there are four outliers which can be considered as mutated flowers
+``` 
+
+9. Visualize the relationship between petal length and sepal length for each species using a scatter plot
+```{r}
+# I used Iris.csv for my lab-4. Thus, I ahve decided to use the same for this exercise. 
+# The table is already clean and the cleaning process was already explored in the 4th exercise
+column <- iris$Species
+column[column=="Iris-setosa"]="blue"
+column[column=="Iris-virginica"]="black"
+column[column=="Iris-versicolor"]="red"
+plot(iris$PetalLengthCm, iris$SepalLengthCm, col=column, ylab="PetalLengthCm", xlab="SepalLengthCm")
+
+# INFERENCE:
+# There is an increasing trend between petal length and sepal length as should be expected
+# However, in case of Setosa, the sepal length and petal length are smaller compared to the other two species. 
+
+# In the following question, we will see if the size of setosa is in face smaller than the other two using the flower area
+```
+
+10. Show the ratio of Area of different species whose area > 0.25. Show the colours in rainbow
+```{r}
+df10 <- iris%>%
+  mutate(area = PetalWidthCm*PetalLengthCm) %>%
+  select(Species, area) %>%
+  filter(area > 0.7)
+df10
+pie(table(df10$Species), col=rainbow(3), main="Species Distribution Area")
+
+#INFERENCE:
+# This chart suggests that the largest flowers are in the species Iris-versicolor and Iris-virginica and the smallest are the setosa species.
+```

@@ -1,0 +1,127 @@
+---
+title: "Lab 6: GGPLOT"
+author: "Makesh Srinivasan"
+date: "9/21/2021"
+output: html_document
+---
+
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## ggplot
+
+1.	Plot a bar graph for the number of male and female participants in the survey. Provide the title as “Male and Female participants” and specify the colours for the bars.
+```{r}
+library(MASS)
+survey <- survey
+df <- unique(survey)
+df <- na.omit(survey)
+library(ggplot2)
+library(dplyr)
+ggplot(df,aes(x=Sex))+geom_bar(fill = c("#FF6633","#121212"))+ggtitle("Male and Female participants")
+```
+2.	Plot a bar graph for the number of left handers and right handers in the survey. Provide the title as “Left Handers and Right Handers” and specify the colours for the bars.
+```{r}
+ggplot(df,aes(x=W.Hnd))+geom_bar(fill = c("#FF6633","#121212")) + ggtitle("Left Handers and Right Handers")
+```
+3.	Plot the distribution between male left handers and female left handers using bar chart. Provide the title as “Female Left Handers and Male Left Handers” and specify the colours for the bars.
+```{r}
+df1 <- df %>%
+  filter(W.Hnd == "Left")
+
+ggplot(df1 ,aes(x=Sex))+geom_bar(fill = c("#FF6633","#121212")) + ggtitle("Female Left Handers and Male Left Handers")
+```
+4.	Draw the distribution of smoking habits of male left handers based on age using pie chart.
+```{r}
+df2 <- survey %>%
+  filter(Sex == "Male" & W.Hnd == "Left")
+
+age <- factor(df2$Age)
+val <- factor(df2$Smoke)
+
+ggplot(df2, aes(x="",y=age,fill=val))+geom_bar(width=1,stat ='identity')+coord_polar("y",start=0)+ggtitle("Smoking habits of male left handers based on 'Age'")+ theme(axis.text = element_blank(),axis.ticks=element_blank(),panel.grid = element_blank())
+```
+5.	Draw the histogram of age distribution with the title as ‘Age distribution’ and xlabel as ‘Age range’ and ylabel as ‘frequency’.
+```{r}
+ggplot(df,aes(x = Age))+geom_histogram(binwidth=2)+labs(title = "Age Distribution", x="Age range",y="frequency")
+```
+6.	Reveal the relationship between the age and writing hand span using scatter plot.
+```{r}
+ggplot(df,aes(x=Wr.Hnd,y=Age))+geom_point()
+```
+7.	Plot the distribution of writing hand span vs. pulse rate of left handers. Provide colour based on gender and vary the size of the point based on height of the student.
+```{r}
+ggplot(df ,aes(x=Wr.Hnd,y=Pulse,size=Height,color=Sex))+geom_point()
+```
+8.	Plot the distribution of height of the students with filled colour based on gender with facet based on left and write handers.
+```{r}
+unique(df$W.Hnd)
+gf = factor(df$W.Hnd,levels = c("Left","Right"),labels = c("Left","Right"))
+ggplot(df,aes(x=Height,fill=Sex))+geom_histogram(binwidth = 1)+labs(title = "Distribution of height",y='Frequency')+facet_wrap(gf,ncol=2)
+```
+9.	Plot the trend of span of writing hand vs. non-writing hand coloured and grouped based on left and right handers with facet label based on clap.
+```{r}
+df4 = factor(df$Clap,levels = c("Left","Right","Neither"),labels= c("Left","Right","Neither"))
+
+#Writing Hand
+ggplot(df,aes(x=Wr.Hnd, fill=W.Hnd))+geom_histogram(binwidth = 1)+labs(title = "Distribution of Span of Writing Hand",y='Frequency')+facet_wrap(df4,ncol=3)
+
+#Non Writing Hand
+ggplot(df,aes(x=NW.Hnd,fill=W.Hnd))+geom_histogram(binwidth = 1)+labs(title = "Distribution of Span of Non - Writing Hand",y='Frequency')+facet_wrap(df4,ncol=3)
+```
+10.	Plot the distribution of age of students based on categories under exercise with facet wrap based on gender.
+```{r}
+gf = factor(df$Sex,levels = c("Female","Male"),labels = c("Female","Male"))
+ec = factor(df$Exer, levels = c("Freq","Some","None"),labels = c("Frequently","Some","None"))
+ggplot(df,aes(x=ec,y = Age))+geom_point()+facet_wrap(gf,ncol=3)
+```
+11.	Plot the box plot of writing hand span with respect to smoking habits of students.
+```{r}
+ggplot(df, aes(x=Wr.Hnd,y=Smoke))+geom_boxplot(fill = "#FF6633")
+```
+
+## Form 4 questions using a dataset of your choice and perform data visualization to graphically depict the data of your choice using ggplot.
+```{r}
+# so far I had used Iris dataset but last class, you had asked us to not use it anymore ma'am. Hence, I am using a new dataset from the MASS package
+crabs <- crabs
+```
+
+12.	Reveal the relationship between the frontal lobe and rear width using scatter plot.
+```{r}
+#FL vs RW
+ggplot(crabs, aes(x=FL,y=RW))+geom_point()
+
+# there is a clear linear relationship between the frontal lobe size and rear width. This could be because of increase in body size resulting in increased frontal lobe size
+```
+
+13.	Colour ratio of crabs who have BD of lesser than average.
+```{r}
+normal <- mean(crabs$BD)
+data <- crabs %>%
+  filter(BD < normal)
+
+colour_factor = factor(crabs$sp,levels = c("O","B"),labels=c("Orange","Blue"))
+ggplot(crabs, aes(x="",y=colour_factor,fill=colour_factor))+geom_bar(width=25,stat ='identity')+coord_polar("y",start=0)
+
+# Inference:
+# the number of orange crabs that are below the normal or average BD value are lower than the blue ones. 
+```
+
+14.	Draw the distribution of male and female crabs with FL > 10.
+```{r}
+ggplot(crabs[crabs$FL>10,], aes(x=factor(crabs[crabs$FL>10,]$sex),fill=factor(crabs[crabs$FL>10,]$sex)))+geom_bar()+ggtitle("Male and Female crabs")
+# They are equal in number, i.e, both male and female count of FL> 10 are same
+```
+
+15.	Plot the box plot of frontal lobe size with respect to the genders of the crabs and see which gender has larger FL.
+```{r}
+ggplot(crabs, aes(x=FL,y=sex))+geom_boxplot(fill = "#FF6633")
+# The box plot shows that the median value of the frontal lobe size is not that different. However, if one has to conclude, Male crabs seem to have a larger frontal lobe than the female ones in general.
+```
+

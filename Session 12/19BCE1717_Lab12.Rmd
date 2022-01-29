@@ -1,0 +1,405 @@
+---
+title: "Lab 12"
+author: "Makesh Srinivasan 19BCE1717"
+Faculty: "Dr. C. Sweetlin Hemalatha"
+Slot: "L39 + L40"
+Course code: "CSE3505"
+date: "23/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Sports analytics
+Instructions: Choose data set related to sports of your choice and do the possible analysis. provide your submission in html format. Mention the data set in the submission
+source: https://www.kaggle.com/idoyo92/epl-stats-20192020
+
+For this exercise, I plan to do the following.
+1) Data manipulation
+2) Data cleaning
+3) Visualisation and plotting
+4) Regression analysis
+
+NOTE: all the previous exercises (8 in total) are incorporated into these four topics.
+
+#### 1) Data manipulation
+The dataset used for this exercise is a very large one, there are many columns and over 500 observations. This dataset is not meant for linear regression or multi-linear regression as the purpose behind this data is to provide a summary of English Premier League tournament of a given year. This dataset is useful in analysing and visualising the data, not predicting any attribute. However, for the sake of this exercise, I have trimmed the dataset and used one attribute for prediction using linear regression. The performance of the same is not guaranteed. I will find out as I experiment with the dataset.
+
+1.1) Import the dataset "epl2020.csv"
+```{r}
+data <- read.csv("epl2020.csv")
+head(data)
+```
+1.2) Explore the structure of the dataset and print the dimension of the same
+```{r}
+str(data)
+```
+```{r}
+print("Dimension: ") 
+dim(data)
+```
+
+We can see that there are several columns whose datatypes are chr, while others are int or num. For regression analysis (step-4), we need to convert the chr datatype to numeric datatype. This conversion is generally done in data cleaning stage, but can also be done in the data manipulation step. 
+
+We need to decide which columns to keep and which to omit. The h_c column shows the home and away games, matchDay shows the day, teamId shows the team name, Referee.x shows the referee, result shows the results - win or loss, and finally, the data shows the date. Let us assume that the label or the prediction variable in the dataset is xG (expected goals). Let us also assume that date, matchday and referee do not play a major role in the prediction of the goals (this is done to reduce the size of the dataset so that I can explore the relevant parts in 100 minutes of this lab. The time taken to convert the values will be extrememly tedious. Normally, this must be done based on correlation).
+
+1.3) Convert chr to numberic types
+```{r}
+colnames(data)
+```
+```{r}
+unique(data["teamId"])
+unique(data["h_a"])
+unique(data["result"])
+```
+So we see that there are two values for sex and smoker, and 4 for region. They are converted below.
+1.4) Import the dataset "insurance.csv"
+```{r}
+data[data$teamId=="Liverpool", 'teamId'] <- as.numeric(0)
+data[data$teamId=="Norwich", 'teamId'] <- as.numeric(1)
+data[data$teamId=="Man City", 'teamId'] <- as.numeric(2)
+data[data$teamId=="West Ham", 'teamId'] <- as.numeric(3)
+data[data$teamId=="Bournemouth", 'teamId'] <- as.numeric(4)
+data[data$teamId=="Brighton", 'teamId'] <- as.numeric(5)
+data[data$teamId=="Burnley", 'teamId'] <- as.numeric(6)
+data[data$teamId=="Crystal Palace", 'teamId'] <- as.numeric(7)
+data[data$teamId=="Everton", 'teamId'] <- as.numeric(8)
+data[data$teamId=="Sheffield United", 'teamId'] <- as.numeric(9)
+data[data$teamId=="Southampton", 'teamId'] <- as.numeric(10)
+data[data$teamId=="Watford", 'teamId'] <- as.numeric(11)
+data[data$teamId=="Aston Villa", 'teamId'] <- as.numeric(12)
+data[data$teamId=="Tottenham", 'teamId'] <- as.numeric(13)
+data[data$teamId=="Arsenal", 'teamId'] <- as.numeric(14)
+data[data$teamId=="Leicester", 'teamId'] <- as.numeric(15)
+data[data$teamId=="Newcastle United", 'teamId'] <- as.numeric(16)
+data[data$teamId=="Wolves", 'teamId'] <- as.numeric(17)
+data[data$teamId=="Chelsea", 'teamId'] <- as.numeric(18)
+data[data$teamId=="Man Utd", 'teamId'] <- as.numeric(19)
+
+data[data$h_a=="h", 'h_a'] <- as.numeric(1)
+data[data$h_a=="a", 'h_a'] <- as.numeric(0)
+
+data[data$result=="w", 'result'] <- as.numeric(1)
+data[data$result=="d", 'result'] <- as.numeric(0)
+data[data$result=="l", 'result'] <- as.numeric(-1)
+
+data$teamId = as.numeric(as.character(data$teamId))
+data$h_a = as.numeric(as.character(data$h_a))
+data$result = as.numeric(as.character(data$result))
+
+head(data, 7)
+```
+```{r}
+str(data)
+```
+
+We can now remove the rest of the chr dataype attributes as they will be of very little use.
+```{r}
+# Remove the 2 columns:
+data <- subset(data, select = -c(matchDay, Referee.x, date))
+str(data)
+```
+
+Now, all the datatypes are numeric or int. We can proceed to the next step
+
+#### 2) Data cleaning
+```{r}
+library(tidyverse)
+```
+2.1) Check for NA values in the dataset
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+2.2) Check for duplicate entries:
+```{r}
+print(paste("Number of duplicate entries = ", sum(duplicated(data))))
+```
+```{r}
+summary(data)
+```
+There are no missing values or duplicate entries. Hence, no further cleaning is needed for this dataset.
+
+#### 3) Data visualisation and plotting
+Import the necessary libraries
+```{r}
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(lattice)
+library(e1071)
+```
+
+3.1) How many games did Arsenal win, lose, and draw while playing its home game?
+```{r}
+# Arsenal team ID is 14
+arsenal_l <- data%>%
+  filter(teamId == 14 & h_a == 1 & result == -1)
+arsenal_d <- data%>%
+  filter(teamId == 14 & h_a == 1 & result == 0)
+arsenal_w <- data%>%
+  filter(teamId == 14 & h_a == 1 & result == 1)
+print(paste("Total victory: ", count(arsenal_w)))
+print(paste("Total draw: ", count(arsenal_d)))
+print(paste("Total loss: ", count(arsenal_l)))
+```
+
+3.2) In a football game, there are many shots taken by a team to score a goal. I want to visualise the number of wins, loses and draws of Arsenal's away game
+```{r}
+shots <- data %>%
+  filter(teamId == 14 & h_a == 0) %>%
+  select(result)
+shots
+pie(table(shots$result), main = 'Female Left Handers and Male Left Handers', col=rainbow(3))
+# 0 -> draw, 1 -> win and -1 -> loss of the game
+```
+
+
+3.3) Determine who won the tournament that season
+```{r}
+# Find the total number of wins and see which team has the highest value
+df1 <- data %>%
+  filter(result == 1)
+ggplot(df1,aes(x=teamId))+geom_bar()+ggtitle("Total wins for each team")
+# teamId = 0 corresponds to Liverpool
+```
+INFERENCE: Liverpool has the highest number of victories that season - verified from the news on google as well 
+
+
+3.4) Find out which team finished last on the table
+```{r}
+df2 <- data %>%
+  filter(result == -1)
+ggplot(df2,aes(x=teamId))+geom_bar()+ggtitle("Total loss for each team")
+# teamId = 1 corresponds to Norwich
+```
+INFERENCE: The team ID 1 finished las due to highest number of losses that season
+
+3.5) Show the ppda_cal as a distribution and show the skewness and kurtosis 
+```{r}
+densityplot(data$ppda_cal)
+```
+
+Inference: The spread is positively skewed (Leptokurtic). PPDA is a measure of pressing play
+VERIFICATION:
+
+```{r}
+print(paste("Skewness = ", skewness(data$ppda_cal)))
+print(paste("Kurtosis = ", kurtosis(data$ppda_cal)))
+# This means mean is greater than median greater than mode
+# Leptokurtic becasue of the positive value
+```
+
+3.6) Show the same using the box plot
+```{r}
+boxplot(data$ppda_cal, main="ppda_cal boxplot", ylab = "ppda_cal")
+```
+There are many outliers as shown above.
+
+3.7) Show the multi box plot between the xG, xGA, npxG and npxGA:
+```{r}
+boxplot(data[, 3:6], main="Multiple-boxplot for EPL dataset", ylab = "units")
+```
+
+3.8) Correlation between the features and xG expected goal attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$xG)))
+}
+```
+INFERENCE: We can see that there is a big correlation between the total income and the loan amount. This is becasue there is more confidence in giving loan to someone with higher salary.
+
+3.9) Covariance between the features and expected goal attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cov(data[[c]],data$xG)))
+}
+```
+
+3.11) Mean, median and std. deviation of the xG attribute.
+```{r}
+mean_charge <- mean(data$xG)
+median_charge <- median(data$xG)
+var_charge <- var(data$xG)
+sd_charge <- sd(data$xG)
+print(paste("mean_xG = ", mean_charge))
+print(paste("median_xG = ", median_charge))
+print(paste("var_xG = ", var_charge))
+print(paste("sd_xG = ", sd_charge))
+```
+
+3.12) Plot the distribution of xG of the games based on home and away with facet based on loss, draw and wins.
+```{r}
+gf = factor(data$result,levels = c("-1","0","1"),labels = c("loss","win","draw"))
+ggplot(data,aes(x=xG,fill=h_a))+geom_histogram(binwidth = 1)+labs(title = "Distribution of height",y='Frequency')+facet_wrap(gf,ncol=2)
+```
+3.13) trend between xG and npxG
+```{r}
+ggplot(data, aes(x=npxG,y=xG))+geom_point()
+```
+3.14 pair plot
+```{r}
+pairs(data[, c("AS.x", "npxG", "deep", "scored", "wins", "draws", "npxGD", "pts", "allowed_ppda")])
+```
+
+We have seen enough plots and analysis between the variables
+
+Step-4 can now begin.
+
+#### 4) Rregression analysis
+Build a linear regression model using all the columns, then choose the statistically significant ones and create another model. Evaluate the models using performance metrics such as R squared and RMSE values.
+```{r}
+model1 <- lm(xG~.,data=data)
+model1
+```
+
+Summary of the model 1
+```{r}
+summary(model1)
+```
+
+INFERENCE: The r squared value and the adjusted r squared value is 0.951 and 0.947 respectively. This is generally considered to be a very good performance which means the model is able to explain 0.951 of the dataset accurately. There are 9 significant attributes and they will be used to generate a model.
+```{r}
+sigma(model1)
+```
+
+Confidence interval of the model
+```{r}
+confint(model1)
+```
+
+Residuals vs Fitted:
+```{r}
+plot(model1, 1)
+```
+Most of the points lie on the red line suggesting that there is a good fit using this model.
+
+The same is visualised below using the histogram plot
+```{r}
+par(mar=c(2,2,2,2))
+hist(model1$residuals)
+```
+
+```{r}
+qqnorm(model1$residuals,ylab = "Residuals")
+qqline(model1$residuals)
+```
+Again, the normalised values (mostly) fall on the line indicating that the performance of the model in terms of prediction is pretty accurate.
+
+#### Linear model using the significant attributes only
+
+Significant attributes = xGA, npxG, npxGA, deep, deep_allowed, scored, missed, xpts, result, HC.x
+```{r}
+sig_data = subset(data, select = c(xG, xGA, npxG, npxGA, deep, deep_allowed, scored, missed, xpts, result, HC.x))
+str(sig_data)
+```
+
+Plots of the trend between the significant attributes and the label - xG
+```{r}
+ggplot(data,aes(x=xG,y=xGA))+geom_point()+geom_smooth()
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=npxG))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=npxGA))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=deep))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=deep_allowed))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=scored))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=missed))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=xpts))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=result))+geom_point()+geom_smooth(method='lm')
+```
+
+```{r}
+ggplot(data,aes(x=xG,y=HC.x))+geom_point()+geom_smooth(method='lm')
+```
+
+Training the model 2
+```{r}
+set.seed(123)
+train_samples <- sig_data$xG %>% 
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+```
+
+```{r}
+train <- sig_data[train_samples,]
+test <- sig_data[-train_samples,]
+model2 <- lm(xG~.,data=train)
+```
+The dataset is split into train and test set and the model is trained - model2
+
+Summary
+```{r}
+summary(model2)
+```
+INFERENCE: The r squared and the adjusted r squared value are 0.9493 and 0.9482 respectively. 
+
+This means that using 4/5 of the dataset we developed a model that is able to accurately predict 0.95 of the dataset. We used the statistically significant attributes to achieve the same and therefore, this can help predict for untrained/new data with fairly good accuracy.
+
+```{r}
+sigma(model2)
+```
+
+```{r}
+confint(model2)
+```
+
+```{r}
+plot(model2, 1)
+```
+
+As seen before, even the new model (2) generated using the statistically significant attributes is able to reduce the distance between the data points and the red line (minimise residual)
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(model2$residuals)
+```
+
+```{r}
+qqnorm(model2$residuals,ylab = "Residuals")
+qqline(model2$residuals)
+```
+The same is justified in the above diagram where most of the points (normalised) lie on the line
+
+Now, we can check the model on the test dataset:
+```{r}
+pred <- model2 %>%
+  predict(test)
+R2 <- R2(pred,test$xG)
+R2
+```
+
+0.935 is a very good score for the test data set in terms of R squared. (Closer it is to 1, the better the model is)
+```{r}
+RMSE <- RMSE(pred,test$xG)
+RMSE
+```
+A low value of RMSE also supports the claim that model 2 is good!
+
+CONCLUSON:
+The data acquired was explored and analysed from numerical and diagramatic perspectives. Then the visualisation tools were used to understand the data and in turn generate a linear regression model using statistically significant attributes that performed really well (R squared = 0.95). 

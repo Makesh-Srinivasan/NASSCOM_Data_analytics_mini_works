@@ -1,0 +1,272 @@
+---
+title: "Lab 8"
+author: "Makesh Srinivasan"
+date: "10/5/2021"
+output: html_document
+---
+Registration number: 19BCE1717 <br>
+Faculty: Dr. C. Sweetlin Hemalatha <br>
+Slot: L39 + L40 <br>
+Course code: CSE3505 <br>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regression analysis
+
+#### Dataset - processing
+Import the dataset "CarPrice_Assignment.csv"
+```{r}
+library(dplyr)
+library(caret)
+library(tidyverse)
+data <- read.csv("CarPrice_Assignment.csv")
+head(data)
+```
+```{r}
+str(data)
+```
+Dropping non-numeric columns:
+```{r}
+# Remove the ID column too as it is the unique identifier for a tuple and not an actual feature
+data = subset(data, select = -c(car_ID,CarName,fueltype,aspiration,doornumber,carbody,drivewheel,enginelocation,enginetype,cylindernumber,fuelsystem))
+
+str(data)
+```
+The dataset has columns that are numerical or integral only. The chr datatypes are removed as they cannot be used in regression modelling
+
+Checking for na values:
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+The dataset is clean! We can use it for visualisation and modelling
+
+#### Plotting
+Pair-plot:
+```{r}
+pairs(data[,c("symboling","wheelbase","wheelbase","carlength","carwidth","carheight", "curbweight", "enginesize", "boreratio", "price")])
+pairs(data[, c("stroke", "compressionratio", "horsepower", "peakrpm", "citympg", "highwaympg", "price")])
+```
+Since the plot was too small I made two set of pair-plots to make it easier to analyse. From an initial glance, there are several features that have a linear relation. With respect to the label, price, we will see how the correlation is for each feature in the dataset.
+
+Correlation:
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$price)))
+}
+```
+I wrote a simple for loop to print the correlation value between the price and all the other attributes in the dataset. The values are printed above. Some attributes have very low correlation while some have high negative or positive correlation. Before we remove the low correlation attributes, let us build a linear regression model and analyse the R squared values.
+
+#### Linear regression Model (Initial - with all features)
+Linear model:
+```{r}
+model <- lm(price~.,data=data)
+model
+```
+Summary:
+```{r}
+summary(model)
+```
+From the summary, it is clear that the significant variables are enginesize, stroke, compressionratio, horsepower,peakrpm.
+
+Sigma and Confidence interval:
+```{r}
+sigma(model)
+confint(model)
+```
+Residuals vs Fitted:
+```{r}
+#Evaluating the residuals
+model1 <- lm(log(price)~.,data=data)
+plot(model1,1)
+```
+The R squared (multiple) shows a relatively high value of approximately 0.85. Now, let us see if removing low correlation attributes and splitting test-train helps improve the performace of the model.
+
+## There are 2 Linear regression model below. One model is based on the high correlation values and the other is based on high significant attributes. 
+
+### 1) Linear regression model (high correlation attributes only)
+The attributes with high correlation values are:
+1) Wheelbase :  0.57781559829215"
+2) Carlength :  0.682920015677962"
+3) Carwidth :  0.759325299741511"
+4) Curbweight :  0.835304879337296"
+5) Enginesize :  0.874144802524512"
+6) Boreratio :  0.553173236798444"
+7) Horsepower :  0.808138822536222"
+8) Citympg :  -0.68575133602704"
+9) Highwaympg :  -0.697599091646557"
+
+Attributes 1-7 are having positive correlation while 8 and 9 have negative correlation. In general, a correlation of around 0.5 is weak while 0.8 is high. Hence, Attributes 1 and 6 can be considered weak correlations while the rest are moderate to high correlations. Let us see if building a linear regression model with these 9 attributes results in a better performace.
+
+```{r}
+data = subset(data, select = c(wheelbase,carlength,carwidth,curbweight,enginesize,boreratio,horsepower,citympg,highwaympg,price))
+str(data)
+```
+
+#### Plotting and visualisation
+```{r}
+library(ggplot2)
+par(mar=c(2,2,2,2))
+cols = colnames(data)
+
+# Wheelbase
+ggplot(data,aes(x=wheelbase,y=price))+geom_point()
+ggplot(data,aes(x=wheelbase,y=price))+geom_point()+geom_smooth()
+ggplot(data,aes(x=wheelbase,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# carlength
+ggplot(data,aes(x=carlength,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# carwidth
+ggplot(data,aes(x=carwidth,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# curbweight
+ggplot(data,aes(x=curbweight,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# enginesize
+ggplot(data,aes(x=enginesize,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# boreratio
+ggplot(data,aes(x=boreratio,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# horsepower
+ggplot(data,aes(x=horsepower,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# citympg
+ggplot(data,aes(x=citympg,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# highwaympg
+ggplot(data,aes(x=highwaympg,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+```
+
+From the plots above we have visualised the trends using the ggplot2 library. We have also seen the correlation values before for the features above. Now we can train the model.
+
+Train-test ratio is 80:20
+```{r}
+set.seed(123)
+train_samples <- data$price %>% 
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+```
+```{r}
+#c("wheelbase","carlength","carwidth","curbweight","enginesize","boreratio","horsepower","citympg","highwaympg","price")
+train <- data[train_samples,]
+test <- data[-train_samples,]
+```
+
+```{r}
+model2 <- lm(price~.,data=train)
+```
+
+```{r}
+summary(model2)
+```
+Since the degree of freedom is very high (155), we have to look at the adjusted R squared and also explains why the Median is very low. 
+```{r}
+pred <- model2 %>%
+  predict(test)
+```
+
+```{r}
+RMSE <- RMSE(pred,test$price)
+RMSE
+```
+```{r}
+R2 <- R2(pred,test$price)
+R2
+```
+On the test set, the R squared value is 0.79
+
+```{r}
+sigma(model2)
+```
+```{r}
+sigma(model2)*100/mean(train$price)
+```
+```{r}
+confint(model2)
+```
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(model2$residuals)
+```
+The mean of the residuals is close to zero and it is very close to the normal distribution.
+```{r}
+qqnorm(model2$residuals,ylab = "Residuals")
+qqline(model2$residuals)
+```
+Most points lie on the straight line, hence this can be considered sufficient.
+
+INFERENCE of LR model with high correlation attributes: 
+The value of R squared adjusted is slightly lower than we had in the first model where we did not split the dataset into train and test set. The value above was .85 and here it is 0.82, but the values cannot be compared directly as the train set was different and the size was smaller in the latter. Therefore, the reduction of 0.03 units is not significant and does not necessarily mean it is a bad model. In the following section we will see how the model is with only the significant attributes. 
+
+### 2) Linear regression model with high significance attributes:
+
+The significant variables are enginesize, stroke, compressionratio, horsepower,peakrpm.
+```{r}
+data <- read.csv("CarPrice_Assignment.csv")
+data = subset(data, select = -c(car_ID,CarName,fueltype,aspiration,doornumber,carbody,drivewheel,enginelocation,enginetype,cylindernumber,fuelsystem))
+data = subset(data, select = c(enginesize,stroke,compressionratio,horsepower,peakrpm,price))
+str(data)
+```
+#### Plotting and visualisation
+```{r}
+par(mar=c(2,2,2,2))
+cols = colnames(data)
+
+# enginesize
+ggplot(data,aes(x=enginesize,y=price))+geom_point()
+ggplot(data,aes(x=enginesize,y=price))+geom_point()+geom_smooth()
+ggplot(data,aes(x=enginesize,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# stroke
+ggplot(data,aes(x=stroke,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# compressionratio
+ggplot(data,aes(x=compressionratio,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# horsepower
+ggplot(data,aes(x=horsepower,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+
+# peakrpm
+ggplot(data,aes(x=peakrpm,y=price))+geom_point()+geom_smooth(method='lm',se=FALSE)
+```
+
+```{r}
+set.seed(123)
+train_samples <- data$price %>% 
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+```
+```{r}
+train <- data[train_samples,]
+test <- data[-train_samples,]
+model3 <- lm(price~.,data=train)
+```
+
+```{r}
+summary(model3)
+```
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(model3$residuals)
+qqnorm(model3$residuals,ylab = "Residuals")
+qqline(model3$residuals)
+```
+
+```{r}
+pred <- model3 %>%
+  predict(test)
+R2 <- R2(pred,test$price)
+R2
+```
+##### Conclusion:
+
+The second model (LR with significant values attributes) shows a slightly higher R Squared adjusted value compared to the LR model with high-correlation attributes. Moreover, the R2 value of the test set is slightly higher in the high-significant value attributes. The normal distribution of the error is also closer to zero as was the case in the previous section. However, the variance in this model is slightly lower as shown by the Normal-Q-Q graph. The points are closer to the line and hence, the model with significant values is the better model compared to the LR model with high correlation attributes. In addition, this model cannot be compared with the initial model with the train set as the entire dataset as the size is larger and as mentioned in the previous section, the comparison will not be valid. 
+
+Therefore, I conclude that this model with the five significant attributes is performing well with an R-Squared adjusted value of 0.83, and a R2 value of 0.80 in test set.

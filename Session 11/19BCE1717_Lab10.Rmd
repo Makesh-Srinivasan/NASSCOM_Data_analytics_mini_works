@@ -1,0 +1,326 @@
+---
+title: "Lab 11"
+author: "Makesh Srinivasan"
+date: "16/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Finance and loan analytics
+Instructions: Choose data set related to loan, credit card, finance of your choice and do the possible analysis. provide your submission in html format. Mention the data set in the submission
+source: https://www.kaggle.com/vipin20/loan-application-data
+
+For this exercise, I plan to do the following.
+1) Data manipulation
+2) Data cleaning
+3) Visualisation and plotting
+4) Regression analysis
+
+NOTE: all the previous exercises (8 in total) are incorporated into these four topics.
+
+#### 1) Data manipulation
+1.1) Import the dataset "loan.csv"
+```{r}
+data <- read.csv("loan.csv")
+head(data)
+```
+1.2) Explore the structure of the dataset and print the dimension of the same
+```{r}
+str(data)
+```
+```{r}
+print("Dimension: ") 
+dim(data)
+```
+
+We can see that the datatypes of Loan_ID, Gender, Married, Dependents, Education, Self_Employed, Property_Area, Loan_Status and Total_Income are chr, while others are int or num. For regression analysis (step-4), we need to convert the chr datatype to numeric datatype. This conversion is generally done in data cleaning stage, but can also be done in the data manipulation step.
+
+1.3) Convert chr to numberic types
+```{r}
+colnames(data)
+```
+```{r}
+# These are the columns with chr datatype. To replace them with numeric value, we must find out what each attribute consists of. 
+# Finding unique values of the first two columns/attributes commented below is meaningless as they are continuous data
+#unique(data["Loan_ID"])
+#unique(data["Total_Income"])
+unique(data["Gender"])
+unique(data["Married"])
+unique(data["Dependents"])
+unique(data["Education"])
+unique(data["Self_Employed"])
+unique(data["Property_Area"])
+unique(data["Loan_Status"])
+```
+So we see that there are two values for sex and smoker, and 4 for region. They are converted below.
+1.4) Import the dataset "insurance.csv"
+```{r}
+data[data$Gender=="Male", 'Gender'] <- as.numeric(1)
+data[data$Gender=="Female", 'Gender'] <- as.numeric(0)
+
+data[data$Married=="Yes", 'Married'] <- as.numeric(1)
+data[data$Married=="No", 'Married'] <- as.numeric(0)
+
+data[data$Dependents=="0", 'Dependents'] <- as.numeric(0)
+data[data$Dependents=="1", 'Dependents'] <- as.numeric(1)
+data[data$Dependents=="2", 'Dependents'] <- as.numeric(2)
+data[data$Dependents=="3+", 'Dependents'] <- as.numeric(3)
+
+data[data$Education=="Graduate", 'Education'] <- as.numeric(1)
+data[data$Education=="Not Graduate", 'Education'] <- as.numeric(0)
+
+data[data$Self_Employed=="Yes", 'Self_Employed'] <- as.numeric(1)
+data[data$Self_Employed=="No", 'Self_Employed'] <- as.numeric(0)
+
+data[data$Property_Area=="Urban", 'Property_Area'] <- as.numeric(0)
+data[data$Property_Area=="Rural", 'Property_Area'] <- as.numeric(1)
+data[data$Property_Area=="Semiurban", 'Property_Area'] <- as.numeric(2)
+
+data[data$Loan_Status=="Y", 'Loan_Status'] <- as.numeric(1)
+data[data$Loan_Status=="N", 'Loan_Status'] <- as.numeric(0)
+
+data$Gender = as.numeric(as.character(data$Gender))
+data$Married = as.numeric(as.character(data$Married))
+data$Dependents = as.numeric(as.character(data$Dependents))
+data$Education = as.numeric(as.character(data$Education))
+data$Self_Employed = as.numeric(as.character(data$Self_Employed))
+data$Property_Area = as.numeric(as.character(data$Property_Area))
+data$Loan_Status = as.numeric(as.character(data$Loan_Status))
+
+head(data, 7)
+```
+```{r}
+str(data)
+```
+We need to deal with the Loan_ID and Total_Income column now.
+For Loan_ID, we can drop the column as it would not play any significant role in the statistical analysis or the regression analysis and as a result would not affect the outcome/prediction in any way. As for the Total_Income column, we can see that this is the sum of the values of ApplicantIncome and CoapplicantIncome for the given entry. This means this column is dependent (Multicollinearity assumption of linear regression is violated) on 2 other columns in the dataset. We can either drop this or the other two columns for further analysis. I have opted to remove ApplicantIncome and CoapplicantIncome and keep Total_Income because with one column we can describe the level of income of the family. We can reduce the size of data to deal with in this exercise.
+```{r}
+# Remove the 2 columns:
+data <- subset(data, select = -c(ApplicantIncome, CoapplicantIncome))
+
+# We can remove the Loan_ID columns as well: 
+data <- subset(data, select = -c(Loan_ID))
+```
+Finally, we have to conver the datatype of Total_Income column by removing the $ sign:
+```{r}
+data$Total_Income = as.numeric(gsub("[\\$,]", "", data$Total_Income))
+head(data, 5)
+str(data)
+```
+Now, all the datatypes are numeric or int. We can proceed to the next step
+
+#### 2) Data cleaning
+```{r}
+library(tidyverse)
+```
+2.1) Check for NA values in the dataset
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+2.2) Check for duplicate entries:
+```{r}
+print(paste("Number of duplicate entries = ", sum(duplicated(data))))
+```
+2.3) We can now identify the columns with the missing values and replace them with appropriate values (dealing with missing values).
+```{r}
+sum(is.na(data$Gender))
+sum(is.na(data$Married))
+sum(is.na(data$Dependents))
+sum(is.na(data$Education))
+sum(is.na(data$Self_Employed))
+sum(is.na(data$LoanAmount))
+sum(is.na(data$Loan_Amount_Term))
+sum(is.na(data$Credit_History))
+sum(is.na(data$Property_Area))
+sum(is.na(data$Loan_Status))
+sum(is.na(data$Total_Income))
+```
+2.4) Missing data replacement
+```{r}
+library(tidyverse)
+# The median was chosen for these columns because it is the most commonly adopted measure while replacing values that are binary (1,0)
+#Gender
+data <- data %>%
+  mutate(Gender = replace(Gender, is.na(Gender), median(Gender, na.rm = TRUE)))
+#Married
+data <- data %>%
+  mutate(Married = replace(Married, is.na(Married), median(Married, na.rm = TRUE)))
+#Self_Employed
+data <- data %>%
+  mutate(Self_Employed = replace(Self_Employed, is.na(Self_Employed), median(Self_Employed, na.rm = TRUE)))
+#Credit_History
+data <- data %>%
+  mutate(Credit_History = replace(Credit_History, is.na(Credit_History), median(Credit_History, na.rm = TRUE)))
+```
+
+The following are non-binary numerical or continuous values so mean/median/max/min values can be used.
+```{r}
+#LoanAmount
+print(paste("Mean value of the column LoanAmount = ", mean(data$LoanAmount,na.rm = TRUE)))
+print(paste("Median value of LoanAmount = ", median(data$LoanAmount,na.rm = TRUE)))
+print(paste("Maximum value of LoanAmount = ", max(data$LoanAmount,na.rm = TRUE)))
+print(paste("Minimum value of LoanAmount = ", min(data$LoanAmount,na.rm = TRUE)))
+
+#Loan_Amount_Term
+print(paste("Mean value of the column Loan_Amount_Term = ", mean(data$Loan_Amount_Term,na.rm = TRUE)))
+print(paste("Median value of Loan_Amount_Term = ", median(data$Loan_Amount_Term,na.rm = TRUE)))
+print(paste("Maximum value of Loan_Amount_Term = ", max(data$Loan_Amount_Term,na.rm = TRUE)))
+print(paste("Minimum value of Loan_Amount_Term = ", min(data$Loan_Amount_Term,na.rm = TRUE)))
+
+#Dependents
+print(paste("Mean value of the column Dependents = ", mean(data$Dependents,na.rm = TRUE)))
+print(paste("Median value of Dependents = ", median(data$Dependents,na.rm = TRUE)))
+print(paste("Maximum value of Dependents = ", max(data$Dependents,na.rm = TRUE)))
+print(paste("Minimum value of Dependents = ", min(data$Dependents,na.rm = TRUE)))
+```
+2.5) Missing data replacement for numerical values
+```{r}
+# In all the three cases the min and max values differ with a big range. Hence, use median or mean. I have chosen mean and median as shown below
+#LoanAmount
+data <- data %>%
+  mutate(LoanAmount = replace(LoanAmount, is.na(LoanAmount), mean(LoanAmount, na.rm = TRUE)))
+
+#Loan_Amount_Term
+data <- data %>%
+  mutate(Loan_Amount_Term = replace(Loan_Amount_Term, is.na(Loan_Amount_Term), mean(Loan_Amount_Term, na.rm = TRUE)))
+
+#Dependents
+data <- data %>%
+  mutate(Dependents = replace(Dependents, is.na(Dependents), median(Dependents, na.rm = TRUE)))
+```
+
+Missing values are replaced.
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+summary(data)
+```
+There are no missing values or duplicate entries. Hence, no further cleaning is needed for this dataset.
+
+#### 3) Data visualisation and plotting
+Import the necessary libraries
+```{r}
+library(dplyr)
+library(caret)
+library(ggplot2)
+```
+3.1) I would like to look at the number of strong women who are unmarried and are earning more than 0 as total income.
+```{r}
+independent_women <- data%>%
+  filter(Gender == 0 & Total_Income>0 & Married == 0)
+independent_women
+print(paste("Total: ", count(independent_women)))
+```
+INFERENCE: There are 66 women who are unmarried and are earning on their own.
+
+
+3.2) Show the men who are earning five-figure income whose family contains more than or equal to 3 children, got his loan approved and is married in the descending order of Total_Income.
+```{r}
+df <- data%>%
+  filter(Gender==1 & Loan_Status == 1 & Total_Income>9999 & Dependents >= 3 & Married==1) %>%
+  arrange(desc(Total_Income))
+df
+print(paste("Total: ", count(df)))
+```
+There are 5 men who fit all the criteria and the above output shows the men in descending order of the income.
+
+
+3.3) Box plot of loan amount for men and women. Is there any partiality or bias? 
+```{r}
+men <- data %>%
+  filter(Gender == 1)
+women <- data %>%
+  filter(Gender == 0)
+
+boxplot(men$LoanAmount, main="Men-boxplot for this dataset", ylab = "Loan amount")
+boxplot(women$LoanAmount, main="Women-boxplot for this dataset", ylab = "Loan amount")
+```
+INFERENCE: There appears to be a partiality in the loan amount given as the median value for women is lower than that of men. However, there are many outliers in case of men 
+
+
+3.4) Dependencies on a histogram plot
+```{r}
+hist(data$Dependents, main = "Dependent", xlab = "Dependent", ylab = "frequency")
+```
+The majority of the dataset is a representation of families with 1 or 0 dependencies.
+
+3.5) Draw the boxplot for Total_Income to analyse the five summary statistics. Provide appropriate title and label. 
+```{r}
+boxplot(data$Total_Income, main="Total_Income boxplot", ylab = "Total_Income")
+```
+Inference: The distribution is skewed as the median is right along the bottom of the box. There are several outliers in this dataset for the Loan amount The interquartile range and percentiles are given below. The max and min values are also shown on the image above.
+
+```{r}
+IQR(data$Total_Income)
+percentile_i = quantile(data$Total_Income, c(.25,.50,.75))
+percentile_i
+```
+We have explored the individual attributes enough. We can move to correlation, pairplots and relation between variables now.
+
+3.6) Pair plots of the attributes:
+```{r}
+pairs(data[,c("LoanAmount","Loan_Amount_Term","Education","Dependents", "Total_Income")])
+```
+3.7) Correlation between the features and LoanAmount attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$LoanAmount)))
+}
+```
+INFERENCE: We can see that there is a big correlation between the total income and the loan amount. This is becasue there is more confidence in giving loan to someone with higher salary.
+
+3.8) Covariance between the features and LoanAmount attribute.
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cov(data[[c]],data$LoanAmount)))
+}
+```
+
+3.10) Mean, median and std. deviation of the LoanAmount attribute.
+```{r}
+mean_charge <- mean(data$LoanAmount)
+median_charge <- median(data$LoanAmount)
+var_charge <- var(data$LoanAmount)
+sd_charge <- sd(data$LoanAmount)
+print(paste("mean_LoanAmount = ", mean_charge))
+print(paste("median_LoanAmount = ", median_charge))
+print(paste("var_LoanAmount = ", var_charge))
+print(paste("sd_LoanAmount = ", sd_charge))
+```
+
+3.11) Show the scatter plot of the Total_Income and LoanAmount
+```{r}
+ggplot(data, aes(x=Total_Income,y=LoanAmount))+geom_point()
+```
+There is slight linearity as shown above - this is supported by the fairly high value of the correlation coefficient above.
+```{r}
+densityplot(data$Total_Income)
+```
+The spread is positively skewed (Leptokurtic).
+
+Verification:
+```{r}
+library(lattice)
+library(e1071)
+library(caret)
+s = skewness(data$Total_Income)
+k = kurtosis(data$Total_Income)
+s
+k
+#K > 0 thus, verfified
+```
+```{r}
+ggplot(data,aes(x=Total_Income,y=LoanAmount,color=Gender))+geom_point()+ggtitle("Loan amount vs Income, Color = Men or women")
+```
+Linear realation already established, but this image shows how the spread is for men and for women. Men have wider spread as suspected before as well.
+
+We have seen enough plots and analysis between the variables
+
+Step-4 can now begin.
+
+#### 4) Rregression analysis
+Regression analysis cannot be done as the output label (loan status) is binary - the better model would be logistic regression or a classification based machine learning model such as KNN or SVM or DT.

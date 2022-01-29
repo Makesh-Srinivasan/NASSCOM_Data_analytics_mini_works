@@ -1,0 +1,334 @@
+---
+title: "Lab 13: Environmental analysis"
+author: "Makesh Srinivasan"
+date: "11/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Environmental analysis
+Instructions: Choose data set related to environment of your choice and do the possible analysis. Mention the data set in the submission
+source: https://www.kaggle.com/ruchi798/global-environmental-indicators > land and agriculture > Agricultural land.csv
+
+For this exercise, I plan to do the following.
+1) Data manipulation and cleaning
+2) Regression analysis
+3) Visualisation and plotting
+
+NOTE: all the previous exercises (8 in total) are incorporated into these four topics.
+
+
+NOTE: Since at the begining of the class it was said that there is no marking for this lab exercise, I have no provided inferences and conclusions for the plot or the linear regression models. This is because, I wanted to explore the syntax and plot various plots rather than explain the plots. There is an issue with knitting of HTML document becasue of the LabelEncoder function, and thus, I have uploaded the RMD file.
+
+## Data manipulation and cleaning
+Import the dataset:
+```{r}
+data <- read.csv("Agricultural Land.csv")
+head(data)
+```
+
+Str:
+```{r}
+str(data)
+```
+
+Get col names:
+```{r}
+data <- subset(data, select = -c(X))
+cols = colnames(data)
+```
+
+Libraries:
+```{r}
+library(dplyr)
+library(caret)
+library(lattice)
+library(e1071)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+```
+
+Rename columns:
+```{r}
+names(data)[2] <- 'Agr_area'
+names(data)[3] <- 'part_area'
+names(data)[4] <- 'part_land'
+names(data)[5] <- 'Arable'
+names(data)[6] <- 'crops'
+names(data)[7] <- 'meadows'
+names(data)[8] <- 'irrigated'
+```
+
+
+Trim the white spaces:
+```{r}
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+data$Agr_area <- trim(data$Agr_area)
+data$part_area <- trim(data$part_area)
+data$part_land <- trim(data$part_land)
+data$Arable <- trim(data$Arable)
+data$crops <- trim(data$crops)
+data$meadows <- trim(data$meadows)
+data$irrigated <- trim(data$irrigated)
+str(data)
+```
+
+Remove the white space between the numbers:
+```{r}
+mClean <- function(strVec){
+  pass1 <- strVec %>% 
+    str_trim() %>% 
+    str_extract("(?x)        # Perl-style whitespace
+                ^[\\+\\-]?   # An optional leading +/-
+                \\d+         # the integer part
+                (\\.\\d+)? # A fractional part
+                ") %>% 
+    as.numeric()
+}
+
+data <- data%>%
+  mutate(
+    Agr_area = as.numeric(mClean(Agr_area)), 
+    part_area = as.numeric(mClean(part_area)), 
+    part_land = as.numeric(mClean(part_land)), 
+    Arable = as.numeric(mClean(Arable)), 
+    crops = as.numeric(mClean(crops)), 
+    meadows = as.numeric(mClean(meadows)), 
+    irrigated = as.numeric(mClean(irrigated)))
+str(data)
+```
+
+Replace NA values
+```{r}
+data <- data %>%
+  mutate(Agr_area = replace(Agr_area, is.na(Agr_area), mean(Agr_area, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(part_area = replace(part_area, is.na(part_area), mean(part_area, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(part_land = replace(part_land, is.na(part_land), mean(part_land, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(Arable = replace(Arable, is.na(Arable), mean(Arable, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(crops = replace(crops, is.na(crops), mean(crops, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(meadows = replace(meadows, is.na(meadows), mean(meadows, na.rm = TRUE)))
+
+data <- data %>%
+  mutate(irrigated = replace(irrigated, is.na(irrigated), mean(irrigated, na.rm = TRUE)))
+
+head(data)
+```
+
+Encode the countries
+```{r}
+lab_enc <- LabelEncoder.fit(data$Country)
+data['Country'] <- transform(lab_enc, matrix(data$Country))
+```
+
+Str:
+```{r}
+str(data)
+```
+
+NA none:
+```{r}
+print(paste("Number of missing values = ", sum(is.na(data))))
+```
+
+Correlation:
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data[[c]],data$Agr_area)))
+}
+```
+
+Covariance:
+```{r}
+cols = colnames(data)
+for (c in cols) {
+  print(paste("Column", c, ": ", cov(data[[c]],data$Agr_area)))
+}
+```
+
+## Regression analysis
+
+Linear regression model:
+```{r}
+model1 <- lm(Agr_area~.,data=data)
+model1
+```
+Summary:
+```{r}
+summary(model1)
+```
+
+Sigma and confidence interval:
+```{r}
+sigma(model1)
+confint(model1)
+```
+
+Residual vs Fitted
+```{r}
+plot(model1, 1)
+```
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(model1$residuals)
+```
+
+```{r}
+qqnorm(model1$residuals,ylab = "Residuals")
+qqline(model1$residuals)
+```
+
+Statistically significant attributes:
+```{r}
+sig_data = subset(data, select = c(Arable, meadows, Agr_area))
+str(sig_data)
+```
+
+Plots:
+```{r}
+ggplot(data,aes(x=Arable,y=Agr_area))+geom_point()+geom_smooth()
+ggplot(data,aes(x=Arable,y=Agr_area))+geom_point()+geom_smooth(method='lm',se=FALSE)
+ggplot(data,aes(x=meadows,y=Agr_area))+geom_point()+geom_smooth()
+```
+
+train model:
+```{r}
+set.seed(123)
+train_samples <- sig_data$Agr_area %>% 
+  createDataPartition(p=0.8,list=FALSE)
+head(train_samples)
+```
+
+```{r}
+train <- sig_data[train_samples,]
+test <- sig_data[-train_samples,]
+model2 <- lm(Agr_area~.,data=train)
+```
+
+Summary:
+```{r}
+summary(model2)
+```
+Performance:
+```{r}
+sigma(model2)
+```
+
+```{r}
+confint(model2)
+```
+
+PLots:
+```{r}
+plot(model2, 1)
+```
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(model2$residuals)
+```
+
+```{r}
+qqnorm(model2$residuals,ylab = "Residuals")
+qqline(model2$residuals)
+```
+
+Test set prediction accuracy:
+```{r}
+pred <- model2 %>%
+  predict(test)
+R2 <- R2(pred,test$Agr_area)
+R2
+```
+
+```{r}
+RMSE <- RMSE(pred,test$Agr_area)
+RMSE
+```
+## Data visualisation:
+
+Data visualisation:
+```{r}
+densityplot(data$Agr_area)
+```
+
+Kurtosis and Skewness
+```{r}
+s = skewness(data$Agr_area)
+k = kurtosis(data$Agr_area)
+s
+k
+#K > 0 thus, verfified
+```
+
+Visuaisation:
+```{r}
+ggplot(data,aes(x=Agr_area,y=meadows,color=Arable))+geom_point()+ggtitle("Agr_area vs meadows, Color = Arable")
+```
+
+
+Quartiles:
+```{r}
+IQR(data$Agr_area)
+percentile_i = quantile(data$Agr_area, c(.25,.50,.75))
+percentile_i
+```
+
+Boxplots:
+```{r}
+boxplot(data$Agr_area, main="Agr_area boxplot", ylab = "Agr_area")
+```
+
+Histogram:
+```{r}
+hist(data$Agr_area, main = "Agr_area", xlab = "Agr_area", ylab = "frequency")
+```
+
+Pair plots:
+```{r}
+pairs(data[,])
+```
+
+Multi-box plot
+```{r}
+boxplot(data[, 2:6], main="Multiple-boxplot for Agricultural area dataset", ylab = "units")
+```
+
+bar plot:
+```{r}
+df1 <- data %>%
+  filter(part_area >= 20)
+ggplot(df1,aes(x=Country))+geom_bar()+ggtitle("Countries with over 1/5th agricultural area")
+```
+
+Scatter plot:
+```{r}
+ggplot(data, aes(x=meadows,y=Agr_area))+geom_point()
+```
+
+```{r}
+ggplot(data, aes(x=crops,y=Agr_area))+geom_point()
+```
+
+```{r}
+
+```
+
+```{r}
+
+```

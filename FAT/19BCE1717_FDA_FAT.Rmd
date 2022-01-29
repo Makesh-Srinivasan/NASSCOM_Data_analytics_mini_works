@@ -1,0 +1,403 @@
+---
+title: "19BCE1717 Lab FAT"
+author: "Makesh Srinivasan 19BCE1717"
+date: "12/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question
+CreditCard
+Format
+A data frame containing 1,319 observations on 12 variables.
+card
+Factor. Was the application for a credit card accepted?
+reports
+Number of major derogatory reports.
+age
+Age in years plus twelfths of a year.
+income
+Yearly income (in USD 10,000).
+share
+Ratio of monthly credit card expenditure to yearly income.
+expenditure
+Average monthly credit card expenditure.
+owner
+Factor. Does the individual own their home?
+selfemp
+Factor. Is the individual self-employed?
+dependents
+Number of dependents.
+months
+Months living at current address.
+majorcards
+Number of major credit cards held.
+active
+Number of active credit accounts.
+Provide appropriate inferences wherever necessary. Give suitable title, x-axis and y-axis labels in all graphs.
+
+
+
+
+## ANSWER
+##### Libraries
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(MASS)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(caret)
+library(lattice)
+library(e1071)
+```
+
+# read the dataset
+```{r}
+data <- read.csv("CreditCard.csv")
+```
+
+# Part- A (35 marks)
+
+#####1.       Display the structure of the data set.
+
+```{r}
+str(data)
+```
+
+#####2.       Print random 10 observations in the data set.
+
+```{r}
+sample_n(data, 10)
+```
+
+#####3.       Display all the observations where the number of major derogatory reports is 3 or more. Print the observations satisfying the condition.
+
+```{r}
+d3 <- data%>%
+  #major derogatory reports is 3 or more
+  filter(reports >= 3)
+# Print the observations satisfying the condition.
+d3
+```
+
+#####4.       Retrieve only the number of dependents of the card accepted applicants who own a house and live there for more than 5 years.
+
+```{r}
+# card accepted applicants, who own a house and live there for more than 5 years.
+d4 <- data%>%
+  filter(card=="yes" & months > 60 & owner=="yes") %>%
+  dplyr::select(dependents)
+d4
+nrow(d4)
+```
+
+#####5.       Show the distribution of card accepted and rejected applicants using an appropriate chart and provide your inference.
+
+```{r}
+ggplot(data, aes(x=card))+geom_bar()+ggtitle("card accepted and rejected applicants")
+```
+
+INFERENCE: The number of cards accepted people are more than the number of card rejected people as the height of the bar for "yes" is greater than the height of the bar corresponding to "no".
+
+#####6.       Print the central tendency measure of appropriate variables.
+
+```{r}
+print("MEAN:")
+mean(data$age)
+mean(data$reports)
+mean(data$income)
+mean(data$share)
+mean(data$expenditure)
+mean(data$months)
+mean(data$dependents)
+mean(data$active)
+mean(data$majorcards)
+
+print("MEDIAN:")
+median(data$age)
+median(data$reports)
+median(data$income)
+median(data$share)
+median(data$expenditure)
+median(data$months)
+median(data$dependents)
+median(data$active)
+median(data$majorcards)
+
+print("IQR:")
+IQR(data$age)
+IQR(data$reports)
+IQR(data$income)
+IQR(data$share)
+IQR(data$expenditure)
+IQR(data$months)
+IQR(data$dependents)
+IQR(data$active)
+IQR(data$majorcards)
+```
+
+#####7.       Print the average age, income and expenditure for the applicants who do not hold any major credit cards but maintains more than 15 active credit accounts.
+
+```{r}
+# who do not hold any major credit cards but maintains more than 15 active credit accounts.
+# majorcards = 0, active > 15
+df7 <- data%>%
+  filter(majorcards == 0 & active > 15)
+
+# Print the average age, income and expenditure
+print(paste("Average age = ", mean(df7$age)))
+print(paste("Average income = ", mean(df7$income)))
+print(paste("Average expenditure = ", mean(df7$expenditure)))
+
+```
+
+#####8.       Show graphically the relationship between age and expenditure and write your inferences.
+
+```{r}
+# Scatter:
+ggplot(data, aes(x=age, y=expenditure)) + geom_point(size=1)
+#INFERENCE: From the scatter plot shown above, most of the points are clustered between the age of 18 and 50 while the expenditure of most of the population is clustered close to 0. From this plot, we can infer that most of the general population between 18 and 50 spend less than 1000 units periodically. However, there are also some who spend over 1000 between the age of 20 and 60. The pre-adults and the elder citizens (age>60) do not spend a lot of money and hence the expenditure is fairly lower (less than or equal to 500). There is no obvious linear relation observable but let us plot the line to see this.
+
+ggplot(data, aes(x=age, y=expenditure)) + geom_point(size=1)+ geom_smooth()
+#INFERENCE: the line is almost linear and parallel to x axis suggesting that the general expenditure value i approximately 300 (read from the plot, may not be exact)
+```
+
+#####9.       What is the frequency and cumlative frequency distribution of accepted and rejected applications of self-employed category?
+
+```{r}
+# frenquency
+df9 <- data%>%
+  filter(selfemp=="yes") 
+f = table(df9$card)
+print("Frequency:")
+f
+
+
+# relative frequency
+print("Relative Frequency:")
+old=options(digits = 2)
+card_freq = table(df9$card)
+samplesize = nrow(df9)
+card_relfreq = card_freq/samplesize
+cbind(card_relfreq)
+
+
+#cumulative frequency:
+df9cum <- data%>%
+  filter(selfemp=="yes") 
+cf = cumsum(table(df9cum$card))
+print("Cumulative frequency:")
+cf
+```
+
+#####10.   Provide the visualization of frequency distribution  of the resultant observations.
+
+```{r}
+ggplot(df9, aes(x=card))+geom_bar()
+```
+
+#####11.   Visualize the summary statistics of expenditure value of self-employed and not self-employed applicants. Provide your inferences.
+
+```{r}
+ggplot(data=data, aes(x=selfemp, y=expenditure))+geom_boxplot() + labs(title = "summary statistics of expenditure value of self-employed and not self-employed applicants")
+```
+INFERENCE: The expenditure for selfemployed and non self employed are shown above. The median for the former is more normally distributed and there is no skewness. however for the yes, it is positively skewed. The quantiles are also visualised using the box. There are many outliers in both cases.
+
+
+#####12.   Does the age and expenditure of the applicants correlated? Justify your answer.
+
+```{r}
+cor(data$age, data$expenditure)
+#INFERENCE: The value of correlation is 0.015 which is extremely low to have any significant impact. However, if we have to categorise it, we can say there is positive correlation as the value is > 0. 
+```
+
+#####13.   Predict the value of age  based on other numerical values and compare various models with different combination of variables. Suggest a model with limited dependent variables that is better according to you. Justify your analysis.
+
+```{r}
+# label = age
+# only numerical columns so drop the rest:
+#NOTE: the col X is dropped as it is just an indexing columns and not useful for prediction
+data_sub = subset(data, select = c(reports, income, share, expenditure, dependents, months, majorcards, active, age))
+str(data_sub)
+```
+
+
+All int or num. Now we can proceed with the modelling.
+```{r}
+model1 <- lm(age~.,data=data_sub)
+model1
+```
+
+The Linear model is generated. The coefficients are displayed above.
+
+```{r}
+summary(model1)
+```
+
+INFERENCE: The R squared value is very low = 0.29. This means only 0.29 of the dataset can be modelled accurately by the linear regression curve. There are 6 significant attributes and they will be used to generate a model 2 later down below. We can conclude that the attributes reports, majorcards and expenditure do not have a significant effect on the age of the holder. Other statistical data regarding the residuals of the holder are also displayed at the top of the summary.
+```{r}
+sigma(model1)
+```
+
+```{r}
+confint(model1)
+```
+
+```{r}
+plot(model1, 1)
+```
+As described above, the line is not perfectly horizontal and the scattered points are not aligning on the line which suggests the residuals are greated (vertical distance between the data and the line). Thus, not a very good model
+
+The same is visualised below using the histogram plot
+```{r}
+par(mar=c(2,2,2,2))
+hist(model1$residuals)
+```
+
+```{r}
+qqnorm(model1$residuals,ylab = "Residuals")
+qqline(model1$residuals)
+```
+Again, the normalised values fall roughly on the line indicating that the performance of the model in terms of prediction not as accurate. 
+
+#### Linear model using the significant attributes only
+
+```{r}
+sig_data = subset(data_sub, select = c(income, share, dependents, months, active, age))
+str(sig_data)
+```
+
+
+Training model 2 using statistically significant attributes:
+```{r}
+set.seed(123)
+train_samples <- sig_data$age %>% 
+  createDataPartition(p=0.7,list=FALSE)
+head(train_samples)
+```
+
+```{r}
+train <- sig_data[train_samples,]
+test <- sig_data[-train_samples,]
+model2 <- lm(age~.,data=train)
+```
+The dataset is split into train and test set and the model is trained - model2
+
+Summary
+```{r}
+summary(model2)
+```
+INFERENCE: The R squared value is now 0.319 for model 2 using statistiaclly significant attributes. There is an improvement in the accuracy from the model 1 but we cannot really compare them together because the train size and the sample are different. For this model 2, we used 0.7 of the data to train the model, while for the model 1 we used all the data. Although there is an increase, we cannot say this is the best prediction algorithm as the r squared value is still a little low. we can now try the same using the highly correlated attribtues to see if there is any improvement.
+
+##### Prediction accuracy: 
+```{r}
+pred <- model2 %>%
+  predict(test)
+R2 <- R2(pred,test$age)
+R2
+RMSE <- RMSE(pred,test$age)
+RMSE
+```
+R squared is 0.23 for the test data explaining 0.23 of the dataset!
+
+
+##### Highly correlated attributes:
+```{r}
+#Correlation wrt age
+cols = colnames(data_sub)
+for (c in cols) {
+  print(paste("Column", c, ": ", cor(data_sub[[c]],data_sub$age))) 
+}
+```
+INFERENCE: The attributes months, active, dependents and income are considered as they are the ones with decent level of correlation values. Negative values does not mean low, it means there is a negative correlation and the reason I did not take share column is because the value is still very close to 0.
+
+```{r}
+high_cor = subset(data_sub, select = c(months, active, dependents, income, age))
+str(high_cor)
+```
+
+
+Training model 3 using high correlated attributes:
+```{r}
+set.seed(100)
+train_samples <- high_cor$age %>% 
+  createDataPartition(p=0.7,list=FALSE)
+head(train_samples)
+```
+
+
+```{r}
+train <- high_cor[train_samples,]
+test <- high_cor[-train_samples,]
+model3 <- lm(age~.,data=train)
+```
+The dataset is split into train and test set and the model is trained - model3
+
+Summary
+```{r}
+summary(model3)
+```
+INFERENCE: The model 3 is haing r squared value less than the model 2 with significant attributes and hence the model 2 appears to be the best overall model.
+
+
+```{r}
+pred <- model3 %>%
+  predict(test)
+R2 <- R2(pred,test$age)
+R2
+RMSE <- RMSE(pred,test$age)
+RMSE
+```
+
+R squared is 0.33 for the test data which is greated than the model 2 scenario. 
+
+CONCLUSION: Even though the train data r squared value for model 2 using significant attributes is greater than the model 3 using high correlated attributes, the test data r squared is 0.33 for model 3 while it is only 0.23 for model 2. Although we cannot definitively conclude that the one is better than the other, we can say that model 2 is better in terms of train set while model 3 is better in terms of test set. In real life, we will encounter more and more test set to predict and thus using model 3 appreas to be a better solution. However, other modelling technique should be explored as the r quared is low for all 3 models using inear regression.
+
+
+ 
+
+# Part-B (15 Marks)
+
+Frame any 5 questions of your choice for analyzing the data and report your insights.
+
+##### 1) Explore the kurtosis and the skewness of the distribution of the income. Then infer as much data as possible and show the same using various plots.
+```{r}
+densityplot(data$income)
+print(paste("Kurtosis = ", kurtosis(data$income)))
+print(paste("Skewness = ", skewness(data$income)))
+# This means mean is greater than median greater than mode
+# Leptokurtic becasue of the positive value
+```
+
+INFERENCE: The plot appears to be positively skewed (skew > 0) and Leptokurtic (kurtosis > 0).
+
+
+##### 2) use facet to distinguish selfemp on users based on income distribution based on card rejected or accepted
+```{r}
+ggplot(data,aes(x=income, fill=selfemp))+geom_histogram(binwidth = 1)+labs(title = "Distribution of income",y='Frequency')+facet_wrap(~card)
+# The distribute of the income is positively skewed in both cases. We see that the number of self employed people is lower than the non self employed ones however, the ones whose cards were accepted, the income is more spread out if the person is self employed.
+```
+
+##### 3) plot the distribution of the cards approved or rejected individually for the owners and the non owners
+```{r}
+ggplot(data, aes(x=card))+geom_bar(aes(fill=card))+labs(title="Card acceptance based on ownership")+facet_wrap(~owner)
+#INFERECNE: The number of accepted is greater in both cases (card accpeted and rejected). But the number of rejected is more for the ones who are owners.
+```
+##### 4) Using box plots observe the liklihood card being approved based on the ownership and months of living in a area. 
+```{r}
+ggplot(data=data, aes(x=card, y=income))+geom_boxplot()
+# INFERENCE: We can see that the income for cards approved and rejected as a box plot. There are a number of outliers in both scenarios but none of them are below the lower bound or the minimum. 
+ggplot(data=data, aes(x=card, y=income))+geom_boxplot()+geom_point(aes(size=months, colour=owner)) + labs(title = "4th")
+# INFERENCE: We can see the same with respect to whether or not the user is a owner and how long he has been living in the area. The months of living does not seem to posses a pattern from the initial observation. However, the owner or not, from the initial glance, we see that there is more blue points in yes category than in no. This suggests that it is more likely to get your card approeved if you are an owner. 
+```
+
+##### 5) Visualise the box plot of the income and infer statistics
+```{r}
+ggplot(data, aes(income)) + geom_boxplot()
+```
+INFERENCE: The median line in the box is closer to the 25th percentile than it is to the 75th. The lower bound is close to 0 and there are numerous outliers as shown on the right. This also supports the claim of q1 as the median is towards the left.
